@@ -1,0 +1,17 @@
+static mut ch2 : channel_u8;  //used
+static mut ch3 : channel_f32;
+static mut ch1 : channel_i32; //used
+
+fn main() -> () {
+    let ptr1 = alloc_cpu(sizeof[i32]() * 4).data as &mut [i32]; // as integer stream generator
+    let ptr2 = alloc_cpu(sizeof[u8]() * 4).data as &mut [u8]; // as char stream generator
+    with hls() {
+        write_channel_i32(&mut ch1, ptr1(0));
+        write_channel_u8(&mut ch2, ptr2(0));
+    }
+
+    with hls() {
+        ptr1(0) = read_channel_i32(&mut ch1);
+        ptr2(0) = read_channel_u8(&mut ch2);
+    }
+}

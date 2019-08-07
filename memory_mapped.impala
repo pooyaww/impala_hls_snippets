@@ -1,0 +1,6 @@
+fn main() -> () {
+    let mut ctrl = 0;
+    with hls() {
+        ctrl = 2;
+    }
+}
