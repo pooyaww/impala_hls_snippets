@@ -1,6 +1,10 @@
 fn main() -> () {
-    let mut ctrl = 0;
+    let mut ctrl = 0i;
     with hls() {
+        fn give_me_two(param:int) -> int {
         ctrl = 2;
+        ctrl
+        }
+        give_me_two(ctrl);
     }
 }
