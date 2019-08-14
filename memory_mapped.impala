@@ -1,10 +1,13 @@
-fn main() -> () {
-    let mut ctrl = 0i;
+
+static mut ch : channel_i32;
+
+fn main(a: i32) -> () {
+    let ptr = alloc_cpu(sizeof[i32]() * 4).data as &mut [i32];
     with hls() {
-        fn give_me_two(param:int) -> int {
-        ctrl = 2;
-        ctrl
-        }
-        give_me_two(ctrl);
+        write_channel_i32(&mut ch, ptr(0));
+    }
+
+    with hls() {
+        ptr(0) = read_channel_i32(&mut ch) + a;
     }
 }
