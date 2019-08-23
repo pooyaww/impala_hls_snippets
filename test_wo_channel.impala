@@ -1,0 +1,6 @@
+fn main() -> () {
+    with hls() {
+        // A lonely kernel
+    }
+
+}
