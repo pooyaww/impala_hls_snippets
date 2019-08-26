@@ -4,10 +4,10 @@ fn main() -> () {
     let ptr = alloc_cpu(sizeof[i32]() * 4).data as &mut [i32];
 
     with hls() {
-        ptr(0) = read_channel_i32(&mut ch);
+        write_channel_i32(&mut ch, ptr(0));
     }
     with hls() {
-        write_channel_i32(&mut ch, ptr(0));
+        ptr(0) = read_channel_i32(&mut ch);
     }
 
 }
