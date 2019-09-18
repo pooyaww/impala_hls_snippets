@@ -1,1 +1,1 @@
-#### Impala FPGA OenCL test cases
+#### Impala FPGA OpenCL test cases
