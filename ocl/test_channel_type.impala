@@ -9,6 +9,11 @@ fn @read_u8(buf: &mut [u8], i: i32) -> u8 { bitcast[&[1][u8]](buf)(i)}
 fn @write_u8(buf: &mut [u8], i: i32, v: u8) -> () { bitcast[&mut[1][u8]](buf)(i) = v }
 
 fn main() -> () {
+
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+
     let ptr1 = alloc_cpu(sizeof[i32]() * 4).data as &mut [i32]; // as integer stream generator
     let ptr2 = alloc_cpu(sizeof[u8]() * 4).data as &mut [u8]; // as char stream generator
 
