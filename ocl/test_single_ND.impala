@@ -1,0 +1,20 @@
+fn main() -> i32 {
+
+//fn @read(buf: i32) -> i32 { bitcast[&[1][i32]](buf)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+    let grid   = (1, 1, 1);
+    //let block  = (2, 2, 2);
+    let block  = (1, 1, 1);
+    let device = 0;
+
+    let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
+    with opencl(device, grid, block) {
+        fn single() -> () {
+            let mut temp = 0;
+            write(ptr, 0, temp++);
+        }
+        single();
+    }
+    0
+}
