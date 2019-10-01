@@ -24,7 +24,6 @@ fn main() -> () {
         write_channel_i32(&mut ch1, data_processed);
 
     }
-
     // read from channel, write to global memory
     with opencl(device, grid, block) {
         write(ptr,0,read_channel_i32(&mut ch1));
