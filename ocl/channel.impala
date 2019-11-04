@@ -7,7 +7,7 @@ fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i)
 fn main() -> () {
 
     let grid   = (1, 1, 1);
-    let block  = (1, 1, 1);
+    let block  = (2, 2, 2);
     let device = 0;
 
     let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];

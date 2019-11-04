@@ -6,7 +6,7 @@ fn main()-> () {
     with opencl(device, grid, block) {
         let mut k = 1;
         // II = 0 lets the synthesis tool decide for the best II considering the constraints applied on the clock period.
-        let II = 3;
+        let II = 0;
         for i in pipeline(II,20,30) {
             //body
             k += i;
