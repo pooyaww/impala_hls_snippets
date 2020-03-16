@@ -18,5 +18,4 @@ fn main() -> () {
         // reaad from ch1 and write to global memory
         ptr(0) = read_channel_i32(&mut ch1);
     }
-
 }
