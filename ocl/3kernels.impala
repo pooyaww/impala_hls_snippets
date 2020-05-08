@@ -14,7 +14,7 @@ fn main() -> () {
     let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
     // K1, read from global memory and write to ch0
     with opencl(device, grid, block) {
-        write_channel_i32(&mut ch0, read(ptr,0));
+        write_channel_i32(&mut ch0, read(ptr, 0));
     }
 
     // K2, read from ch0 and write to ch1
@@ -25,7 +25,7 @@ fn main() -> () {
     // K3, read from ch1 and write to global memory
     print_string("Last Kernel");
     with opencl(device, grid, block) {
-        write(ptr,0,read_channel_i32(&mut ch1));
+        write(ptr, 0, read_channel_i32(&mut ch1));
         print_string("Last Kernel")
     }
 
