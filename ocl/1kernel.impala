@@ -10,6 +10,7 @@ fn main() -> () {
     let ptr_in  = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
     let ptr_out = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
 
+    //read from global and write to global whithin same kernel
     with opencl(device, grid, block) {
         write(ptr_out, 0, read(ptr_in, 0));
     }
