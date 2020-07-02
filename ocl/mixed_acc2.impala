@@ -40,10 +40,10 @@ fn main() -> () {
     with hls() {
         ptr_hls(0) = read_channel_i32(&mut ch_hls);
         let mut x = 1;
-//        // II = 0 lets the synthesis tool decide for the best II considering the constraints applied on the clock period.
+        // II = 0 lets the synthesis tool decide for the best II considering the constraints applied on the clock period.
         let II = 2;
         for i in pipeline(II,1,20) {
-//            //body
+            //body
             x += i;
         }
     }
