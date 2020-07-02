@@ -16,6 +16,11 @@ fi
 
 echo "Re-compiling and re-generating..."
 impala ~/anydsl/runtime/platforms/*.impala ~/anydsl/runtime/src/*.impala ../${name}.impala -emit-llvm > hls_host_ir_${name}.dump
-vim -O ${name}.ll hls_host_ir_${name}.dump
 
-cd ..
+if [ $? -eq 0 ]; then
+    vim -O ${name}.ll hls_host_ir_${name}.dump
+    cd ..
+else
+    cd ..
+    echo "🤔"
+fi
