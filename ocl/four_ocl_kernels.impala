@@ -1,0 +1,38 @@
+static mut ch0 : channel_i32;
+static mut ch1 : channel_i32;
+static mut ch2 : channel_i32;
+
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+
+fn main() -> () {
+
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+
+    let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
+    // K1, read from global memory and write to ch0
+    with opencl(device, grid, block) {
+        write_channel_i32(&mut ch0, read(ptr, 0));
+    }
+
+    // K2, read from ch0 and write to ch1
+    with opencl(device, grid, block) {
+        write_channel_i32(&mut ch1, read_channel_i32(&mut ch0) );
+    }
+
+    // K3, read from ch1 and write to ch2
+    with opencl(device, grid, block) {
+        write_channel_i32(&mut ch2, read_channel_i32(&mut ch1) );
+    }
+
+    // K4, read from ch2 and write to global memory
+    print_string("Last Kernel");
+    with opencl(device, grid, block) {
+        write(ptr, 0, read_channel_i32(&mut ch2));
+        print_string("Last Kernel")
+    }
+
+}
