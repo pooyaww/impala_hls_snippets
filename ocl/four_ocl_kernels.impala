@@ -1,3 +1,24 @@
+/*
+        Host
+          |
+      Global memory
+          |
+         ch0
+          |
+        Kernel 1
+          |
+         ch1
+          |
+        Kernel2
+          |
+         ch2
+          |
+     Global memory
+          |
+         Host
+*/
+
+
 static mut ch0 : channel_i32;
 static mut ch1 : channel_i32;
 static mut ch2 : channel_i32;
