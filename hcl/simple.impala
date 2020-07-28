@@ -1,0 +1,8 @@
+fn main() -> () {
+    let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
+
+    with hls() {
+        let mut a : i32;
+        ptr(0) = a;
+    }
+}
