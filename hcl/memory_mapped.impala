@@ -11,6 +11,6 @@ fn main(a: i32) -> () {
     }
 
     with hls() {
-       write(ptr,0 , read_channel_i32(&mut ch) + a;
+       write(ptr,0 , read_channel_i32(&mut ch) + a);
     }
 }
