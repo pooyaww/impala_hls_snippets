@@ -2,7 +2,7 @@ fn main() -> () {
     let ptr = alloc_hls(0, sizeof[i32]() * 4).data as &mut [i32];
 
     with hls() {
-        let mut a : i32;
+        let a = 1;
         ptr(0) = a;
     }
 }
