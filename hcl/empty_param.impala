@@ -1,4 +1,5 @@
 fn main() -> () {
-    with hls() {
+    let device = 0;
+    with hls(device) {
     }
 }
