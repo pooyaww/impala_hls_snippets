@@ -1,0 +1,7 @@
+fn main() -> () {
+    let device = 0;
+    with hls(device) {
+        // A lonely kernel
+    }
+
+}

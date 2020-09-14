@@ -1,0 +1,16 @@
+fn main() -> () {
+
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+
+    let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
+    with opencl(device, grid, block) {
+    }
+
+    print_string("Last Kernel");
+    with opencl(device, grid, block) {
+        print_string("Last Kernel")
+    }
+
+}
