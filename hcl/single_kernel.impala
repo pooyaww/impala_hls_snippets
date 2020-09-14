@@ -13,7 +13,7 @@ fn main() -> () {
         single();
     }
 
-    let ptr = alloc_hls(device, sizeof[i32]() * 4).data as &mut [i32];
+    let ptr = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
 
 //kernel2
     with hls(device) {

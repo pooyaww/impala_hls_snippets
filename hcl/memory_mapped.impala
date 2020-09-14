@@ -5,7 +5,7 @@ fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i)
 
 fn main(a: i32) -> () {
     let device = 0;
-    let ptr = alloc_opencl(device, sizeof[i32]() * 4).data as &mut [i32];
+    let ptr = alloc_opencl(device, sizeof[i32]() * 4i64).data as &mut [i32];
 
     with hls(device) {
         write_channel_i32(&mut ch, read(ptr,0));
