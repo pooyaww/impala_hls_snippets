@@ -1,0 +1,5 @@
+fn main() -> () {
+    let device = 0;
+    hls(device, ||  {
+    });
+}
