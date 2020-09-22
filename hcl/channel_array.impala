@@ -1,0 +1,16 @@
+static mut ch : channel_i32;
+
+fn main() -> () {
+    let device = 0;
+    let ptr = alloc_hls(0, sizeof[i32]() * 4i64).data as &mut [i32];
+    let data = [1, 2];
+
+    with hls(device) {
+        write_channel2_i32(&mut ch, data);
+    }
+
+    with hls(device) {
+        read_channel2_i32(&mut ch);
+    }
+
+}
