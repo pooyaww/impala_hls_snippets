@@ -1,0 +1,18 @@
+static mut ch : channel32_i32;
+
+fn main() -> () {
+    let grid   = (1, 1, 1);
+    let block  = (2, 2, 2);
+    let device = 0;
+    let ptr = alloc_hls(0, sizeof[i32]() * 4i64).data as &mut [i32];
+    let data_array = [1, ..32];
+
+    with opencl(device, grid, block) {
+        write_channel32_i32(&mut ch, data_array);
+    }
+
+    with opencl(device, grid, block) {
+        read_channel32_i32(&mut ch);
+    }
+
+}
