@@ -18,5 +18,5 @@ echo "Re-compiling and re-generating..."
 impala ~/anydsl/runtime/platforms/*.impala ~/anydsl/runtime/src/*.impala ../${name}.impala -emit-llvm > hls_host_ir_${name}.dump
 mv ${name}.hls ${name}.cpp
 
-vim -O hls_host_ir_${name}.dump ${name}.cpp
+vim -O ../${name}.impala ${name}.ll hls_host_ir_${name}.dump ${name}.cpp
 cd ..

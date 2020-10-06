@@ -1,4 +1,6 @@
-static mut ch : channel1_i32;
+
+static mut ch0 : channel1_i32;
+static mut ch1 : channel1_i32;
 
 fn @read(buf: &mut [i32], i: i32) -> [i32 * 1] { bitcast[&[1][[i32 * 1]]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32 , v: [i32 * 1]) -> () { bitcast[&mut[1][[i32 * 1]]](buf)(i) = v }
@@ -6,15 +8,19 @@ fn @write(buf: &mut [i32], i: i32 , v: [i32 * 1]) -> () { bitcast[&mut[1][[i32 *
 fn main() -> () {
     let device = 0;
     let ptr = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+
     with hls(device) {
-        write_channel1_i32(&mut ch, read(ptr,0));
+        // read from global memory and write to ch0
+        write_channel1_i32(&mut ch0, read(ptr,0));
     }
 
     with hls(device) {
-        write(ptr,0, read_channel1_i32(&mut ch));
+        // read from ch0 and write to ch1
+        write_channel1_i32(&mut ch1, read_channel1_i32(&mut ch0));
     }
 
     with hls(device) {
-        write(ptr,0, read_channel1_i32(&mut ch));
+        // read from ch1 and write to global memory
+        write(ptr,0,read_channel1_i32(&mut ch1));
     }
 }

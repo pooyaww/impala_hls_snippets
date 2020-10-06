@@ -1,14 +1,14 @@
-static mut ch1 : channel2_i32;
-static mut ch2 : channel1_i32;
+static mut ch1 : channel2_i32; // struct of array
+static mut ch2 : channel_i32;  // scalar
 
 fn main() -> () {
     let device = 0;
     let ptr = alloc_hls(0, sizeof[i32]() * 4i64).data as &mut [i32];
-    let data_array_two = [1, 2];
-    let data_array_one = [1];
+    let data_array = [1, 2];
+    let data_scalar = 1;
 
     with hls(device) {
-        write_channel2_i32(&mut ch1, data_array_two);
+        write_channel2_i32(&mut ch1, data_array);
         print_string("array")
     }
 
@@ -18,7 +18,8 @@ fn main() -> () {
     }
 
     with hls(device) {
-        write_channel1_i32(&mut ch2, data_array_one);
+        write_channel_i32(&mut ch2, data_scalar);
+        print_string("scalar")
     }
 
     with hls(device) {

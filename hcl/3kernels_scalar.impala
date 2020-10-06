@@ -1,4 +1,3 @@
-
 static mut ch0 : channel_i32;
 static mut ch1 : channel_i32;
 
