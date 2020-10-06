@@ -33,7 +33,7 @@ fn main() -> () {
     let block  = (1, 1, 1);
     let device = 0;
 
-    let ptr = alloc_opencl(0, sizeof[i32]() * 4).data as &mut [i32];
+    let ptr = alloc_opencl(0, sizeof[i32]() * 4 as i64).data as &mut [i32];
     // K1, read from global memory and write to ch0
     with opencl(device, grid, block) {
         write_channel_i32(&mut ch0, read(ptr, 0));

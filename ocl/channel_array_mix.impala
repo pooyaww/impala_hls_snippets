@@ -1,4 +1,4 @@
-static mut ch1 : channel_i32;
+static mut ch1 : channel2_i32;
 static mut ch2 : channel_i32;
 
 fn main() -> () {
@@ -25,7 +25,7 @@ fn main() -> () {
     }
 
     with opencl(device, grid, block) {
-        read_channel_i32(&mut ch1);
+        read_channel2_i32(&mut ch1);
     }
 
 }

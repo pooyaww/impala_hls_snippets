@@ -9,7 +9,7 @@ fn main(a: i32) -> () {
     let block  = (1, 1, 1);
     let device = 0;
 
-    let ptr = alloc_cpu(sizeof[i32]() * 4).data as &mut [i32];
+    let ptr = alloc_cpu(sizeof[i32]() * 4 as i64).data as &mut [i32];
     with opencl(device, grid, block) {
         write_channel_i32(&mut ch, read(ptr, 0));
     }
