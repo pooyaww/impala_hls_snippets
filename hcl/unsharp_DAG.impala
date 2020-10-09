@@ -1,0 +1,68 @@
+static mut ch_in_to_gray : channel_i32;
+static mut ch_gray_to_blury : channel_i32;
+static mut ch_gray_to_ratio : channel_i32;
+static mut ch_gray_to_sharpen : channel_i32;
+static mut ch_blury_to_blurx : channel_i32;
+static mut ch_blurx_to_sharpen : channel_i32;
+static mut ch_sharpen_to_ratio : channel_i32;
+static mut ch_ratio_to_sharpen : channel_i32;
+
+
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+fn main() -> () {
+    let device = 0;
+    let ptr_in = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_out = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+
+    with hls(device) {
+        // read from global memory and write to ch_in_to_gray
+        // Input
+        write_channel_i32(&mut ch_in_to_gray, read(ptr_in,0));
+    }
+
+    with hls(device) {
+        // read from ch0 and write to ch_gray_to_sharpen
+        // Gray
+        write_channel_i32(&mut ch_gray_to_blury, read_channel_i32(&mut ch_in_to_gray));
+        write_channel_i32(&mut ch_gray_to_sharpen, read_channel_i32(&mut ch_in_to_gray));
+        write_channel_i32(&mut ch_gray_to_ratio, read_channel_i32(&mut ch_in_to_gray));
+    }
+
+    with hls(device) {
+        // BlurY
+        write_channel_i32(&mut ch_blury_to_blurx, read_channel_i32(&mut ch_gray_to_blury));
+    }
+
+    with hls(device) {
+        // BlurX
+        write_channel_i32(&mut ch_blurx_to_sharpen, read_channel_i32(&mut ch_blury_to_blurx));
+    }
+
+    with hls(device) {
+        // Sharpen
+        let first = read_channel_i32(&mut ch_gray_to_sharpen);
+        let second = read_channel_i32(&mut ch_blurx_to_sharpen);
+        let sum = first + second;
+        write_channel_i32(&mut ch_sharpen_to_ratio, sum);
+
+    }
+    with hls(device) {
+        // Ratio
+        let first = read_channel_i32(&mut ch_gray_to_ratio);
+        let second = read_channel_i32(&mut ch_sharpen_to_ratio);
+        let sum = first + second;
+        write_channel_i32(&mut ch_ratio_to_sharpen, sum);
+    }
+
+    with hls(device) {
+    // read from ch_ratio_to_sharpen and write to global memory
+    // Unsharp
+        let first = ptr_in(0);
+        let second = read_channel_i32(&mut ch_ratio_to_sharpen);
+        let sum = first + second;
+        write(ptr_out, 0, sum);
+    }
+
+}
