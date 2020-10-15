@@ -26,12 +26,14 @@ fn main() -> () {
     with hls(device) {
         // Blurx
         // local op
+        // 1 4 6 4 1 /16 (0.0625)
         write_channel_i32(&mut ch_blurx_to_blury, read_channel_i32(&mut ch_in_to_blurx));
     }
 
     with hls(device) {
         // Blury
         // local op
+        // 1 4 6 4 1 /16 (0.0625)
         write_channel_i32(&mut ch_blury_to_sharpen, read_channel_i32(&mut ch_blurx_to_blury));
     }
 
@@ -47,6 +49,7 @@ fn main() -> () {
     with hls(device) {
         // Mask
         // point op
+        // selection between in and blury according to thresholding on sharpen
         let first = read_channel_i32(&mut ch_in_to_mask);
         let second = read_channel_i32(&mut ch_sharpen_to_mask);
         let third = read_channel_i32(&mut ch_blury_to_mask);

@@ -27,16 +27,19 @@ fn main() -> () {
 
     with hls(device) {
         // Blurx
+        // local op
         write_channel_i32(&mut ch_blurx_to_blury, read_channel_i32(&mut ch_in_to_blurx));
     }
 
     with hls(device) {
         // Blury
+        // local op
         write_channel_i32(&mut ch_blury_to_sharpen, read_channel_i32(&mut ch_blurx_to_blury));
     }
 
     with hls(device) {
         // Sharpen
+        // point op
         let first = read_channel_i32(&mut ch_in_to_sharpen);
         let second = read_channel_i32(&mut ch_blury_to_sharpen);
         let sum = first + second;
@@ -45,6 +48,7 @@ fn main() -> () {
     }
     with hls(device) {
         // Mask
+        // point op
         let first = read_channel_i32(&mut ch_in_to_mask);
         let second = read_channel_i32(&mut ch_sharpen_to_mask);
         let third = read_channel_i32(&mut ch_blury_to_mask);
@@ -54,6 +58,7 @@ fn main() -> () {
 
     with hls(device) {
     // write out
+    // not computational can be fused with Mask stage
         write(ptr_out, 0, read_channel_i32(&mut ch_mask_to_out));
     }
 
