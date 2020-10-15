@@ -17,7 +17,8 @@ fn main() -> () {
 
 
     with hls(device) {
-        // read from global memory and write to different stages
+        // read from global memory and write to  3 different stages
+        // split image
         write_channel_i32(&mut ch_in_to_blurx, read(ptr_in,0));
         write_channel_i32(&mut ch_in_to_sharpen, read(ptr_in,0));
         write_channel_i32(&mut ch_in_to_mask, read(ptr_in,0));
