@@ -1,0 +1,58 @@
+static mut ch_in_to_blur : channel_i32;
+static mut ch_in_to_sharpen : channel_i32;
+static mut ch_in_to_mask : channel_i32;
+static mut ch_blur_to_sharpen : channel_i32;
+static mut ch_blur_to_mask : channel_i32;
+static mut ch_sharpen_to_mask : channel_i32;
+
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+
+fn main() -> () {
+    let device = 0;
+    let ptr_in = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_out = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+
+
+    with hls(device) {
+        // read from global memory and write to  3 different stages
+        // split image
+        write_channel_i32(&mut ch_in_to_blur, read(ptr_in,0));
+        write_channel_i32(&mut ch_in_to_sharpen, read(ptr_in,0));
+        write_channel_i32(&mut ch_in_to_mask, read(ptr_in,0));
+    }
+
+    with hls(device) {
+        // Blur
+        // local op
+        // 1,  4,  6,  4, 1
+        // 4, 16, 24, 16, 4
+        // 6, 24, 36, 24, 6
+        // 4, 16, 24, 16, 4
+        // 1,  4,  6,  4, 1
+
+        write_channel_i32(&mut ch_blur_to_sharpen, read_channel_i32(&mut ch_in_to_blur));
+    }
+
+    with hls(device) {
+        // Sharpen
+        // point op
+        let first = read_channel_i32(&mut ch_in_to_sharpen);
+        let second = read_channel_i32(&mut ch_blur_to_sharpen);
+        let sum = first + second;
+        write_channel_i32(&mut ch_sharpen_to_mask, sum);
+
+    }
+    with hls(device) {
+        // Mask
+        // point op
+        // selection between in and blury according to thresholding on sharpen
+        let first = read_channel_i32(&mut ch_in_to_mask);
+        let second = read_channel_i32(&mut ch_sharpen_to_mask);
+        let third = read_channel_i32(&mut ch_blur_to_mask);
+        let sum = first + second + third;
+        write(ptr_out, 0, sum);
+    }
+
+}
