@@ -8,6 +8,7 @@ fn main(a:i32) -> () {
     with hls(device) {
         let mut b = 0;
         b = read(ptr,0);
+        ptr_cpu(1) = b + 1;
     }
 
     with hls(device) {
