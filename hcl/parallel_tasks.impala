@@ -1,0 +1,20 @@
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+fn main() -> () {
+    let device = 0;
+    let ptr_hls_in = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_hls_out = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+
+    with hls(device) {
+        let mut b = 0;
+        b = read(ptr_hls_in, 0);
+        write(ptr_hls_out, 1, b + 1);
+    }
+
+    with hls(device) {
+        let mut b = 0;
+        b = read(ptr_hls_in, 2);
+        write(ptr_hls_out, 3, b + 2);
+    }
+}
