@@ -1,0 +1,36 @@
+
+static mut ch0 : channel2_i32;
+static mut ch1 : channel2_i32;
+
+fn @read(buf: &mut [i32], i: i32) -> [i32 * 2] { bitcast[&[1][[i32 * 2]]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32 , v: [i32 * 2]) -> () { bitcast[&mut[1][[i32 * 2]]](buf)(i) = v }
+
+fn main() -> () {
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+    let ptr_hls_in = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_hls_out = alloc_hls(device, sizeof[i32]() * 5i64).data as &mut [i32];
+
+    with opencl(device, grid, block) {
+        // load
+        // read from global memory and write to ch0
+        write_channel2_i32(&mut ch0, read(ptr_hls_in, 0));
+    }
+
+    with opencl(device, grid, block) {
+        // read from ch0, compute, write to ch1
+        let samples = read_channel2_i32(&mut ch0);
+        let sample_1 = samples(0) + 1;
+        let sample_2 = samples(0) * 2;
+        let samples_modified = [sample_1, sample_2];
+        write_channel2_i32(&mut ch1, samples_modified);
+    }
+
+    with opencl(device, grid, block) {
+        // store
+        // read from ch1 and write to global memory
+        let samples = read_channel2_i32(&mut ch1);
+        write(ptr_hls_out, 0, samples);
+    }
+}

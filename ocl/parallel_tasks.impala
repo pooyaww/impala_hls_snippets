@@ -1,0 +1,26 @@
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+fn main() -> () {
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+    let ptr_hls_in = alloc_opencl(device, sizeof[i32]() * 5i64).data as &mut [i32];
+    let ptr_hls_out = alloc_opencl(device, sizeof[i32]() * 5i64).data as &mut [i32];
+
+    with opencl(device, grid, block) {
+        //TASK1
+        for i in pipeline(1, 0, 2) {
+            let mut b = 0;
+            b = read(ptr_hls_in, 0);
+            write(ptr_hls_out, i, b + i);
+        }
+    }
+
+    with opencl(device, grid, block) {
+        //TASK2
+        let mut b = 0;
+        b = read(ptr_hls_in, 3);
+        write(ptr_hls_out, 4, b * 2);
+    }
+}
