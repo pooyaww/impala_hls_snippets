@@ -1,0 +1,40 @@
+static mut ch0 : channel_i32;
+static mut ch1 : channel_i32;
+
+// At the moment P2P and M2M for several devices on the same platform is not supported.
+// Also copying data through host for several HLS devices is not possible as kernels are
+// launched only one time on HLS-based platform.
+// we can use different devices but all devices cannot be launched together on the same app (program)
+// one solution at the moemnt can be using different backends. one FPGA device ueses HLS backend and
+// anothe uses OpenCL backend. This way we will have several devices in the same program and peobably pass
+// the data through host cpu.
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
+
+fn main() -> () {
+    let device_0 = 0;
+    let device_1 = 1;
+    let ptr_cpu = alloc_cpu(sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_0 = alloc_hls(device_0, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_1 = alloc_hls(device_1, sizeof[i32]() * 4i64).data as &mut [i32];
+
+    with hls(device_0) {
+        // read from global memory and write to ch0
+        write_channel_i32(&mut ch0, read(ptr_0,0));
+    }
+
+    with hls(device_0) {
+        // read from ch0 and write to ch1
+        write_channel_i32(&mut ch1, read_channel_i32(&mut ch0));
+    }
+
+    // dev1 to dev2 through cpu
+        let temp = read(ptr_cpu, 0);
+        write(ptr_1, 0, temp);
+
+    with hls(device_1) {
+        // read from ch1 and write to global memory
+        write(ptr_0, 0, read_channel_i32(&mut ch1));
+    }
+
+}
