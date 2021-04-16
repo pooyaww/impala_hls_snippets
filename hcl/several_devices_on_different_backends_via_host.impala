@@ -12,11 +12,15 @@ fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&[1][i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut[1][i32]](buf)(i) = v }
 
 fn main() -> () {
-    let device_0 = 0;
-    let device_1 = 1;
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+
+    let device_0 = 0; // hls backend
+    let device_1 = 1; //opencl backend
+
     let ptr_cpu = alloc_cpu(sizeof[i32]() * 4i64).data as &mut [i32];
     let ptr_0 = alloc_hls(device_0, sizeof[i32]() * 4i64).data as &mut [i32];
-    let ptr_1 = alloc_hls(device_1, sizeof[i32]() * 4i64).data as &mut [i32];
+    let ptr_1 = alloc_opencl(device_1, sizeof[i32]() * 4i64).data as &mut [i32];
 
     with hls(device_0) {
         // read from global memory and write to ch0
@@ -32,7 +36,7 @@ fn main() -> () {
         let temp = read(ptr_cpu, 0);
         write(ptr_1, 0, temp);
 
-    with hls(device_1) {
+    with opencl(device_1, grid, block) {
         // read from ch1 and write to global memory
         write(ptr_0, 0, read_channel_i32(&mut ch1));
     }
