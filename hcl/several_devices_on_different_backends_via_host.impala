@@ -1,5 +1,4 @@
 static mut ch0 : channel_i32;
-static mut ch1 : channel_i32;
 
 // At the moment P2P and M2M for several devices on the same platform is not supported.
 // Also copying data through host for several HLS devices is not possible as kernels are
@@ -28,17 +27,18 @@ fn main() -> () {
     }
 
     with hls(device_0) {
-        // read from ch0 and write to ch1
-        write_channel_i32(&mut ch1, read_channel_i32(&mut ch0));
+        ptr_cpu(0) = read_channel_i32(&mut ch0);
     }
 
     // dev1 to dev2 through cpu
-        let temp = read(ptr_cpu, 0);
-        write(ptr_1, 0, temp);
+    let mut temp = ptr_cpu(0);
+    write(ptr_1, 0, temp++);
 
     with opencl(device_1, grid, block) {
         // read from ch1 and write to global memory
-        write(ptr_0, 0, read_channel_i32(&mut ch1));
+        write(ptr_1, 1, read(ptr_1,0)+2);
     }
+    let mut temp2 = ptr_cpu(1);
+    print_i32(temp2++);
 
 }
