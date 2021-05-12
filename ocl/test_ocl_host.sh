@@ -15,7 +15,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-impala ~/anydsl/runtime/platforms/*.impala ~/anydsl/runtime/src/*.impala ../${name}.impala -emit-llvm > hls_host_ir_${name}.dump
+impala --emit-llvm ~/anydsl/runtime/platforms/impala/*.impala ../${name}.impala > hls_host_ir_${name}.dump
 
 vim -O ${name}.ll hls_host_ir_${name}.dump
 cd ..

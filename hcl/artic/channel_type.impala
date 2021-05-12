@@ -2,10 +2,11 @@ static mut ch2 : channel_u8;  //used
 static mut ch3 : channel_f32;
 static mut ch1 : channel_i32; //used
 
+#[export]
 fn main() -> () {
     let device = 0;
-    let ptr1 = alloc_hls(device, sizeof[i32]() * 4i64).data as &mut [i32]; // as integer stream generator
-    let ptr2 = alloc_hls(device, sizeof[u8]() * 4i64).data as &mut [u8]; // as char stream generator
+    let ptr1 = alloc_hls(device, sizeof[i32]() * 4).data as &mut [i32]; // as integer stream generator
+    let ptr2 = alloc_hls(device, sizeof[u8]() * 4).data as &mut [u8]; // as char stream generator
     hls(device,||  {
         write_channel_i32(&mut ch1, ptr1(0));
         write_channel_u8(&mut ch2, ptr2(0));
