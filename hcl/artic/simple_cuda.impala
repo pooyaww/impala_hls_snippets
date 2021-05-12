@@ -1,0 +1,11 @@
+#[export]
+fn main(test:i32) -> () {
+    let device = 0;
+    let ptr = alloc_cuda(device, sizeof[i32]() * 4).data as &mut [i32];
+
+    cuda(device,(1,1,1),(1,1,1), || {
+        let mut a : i32;
+        a = test;
+        ptr(0) = a;
+    });
+}
