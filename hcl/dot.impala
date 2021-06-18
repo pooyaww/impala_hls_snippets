@@ -8,14 +8,14 @@ fn @(?n)dot(a: &[i32], b: &[i32], n: i32) -> i32 {
     sum
 }
 
-fn main() -> i32 {
-    let mut z: i32;
-    with hls() {
+fn main() -> () {
+    let device = 0;
+    let ptr = alloc_hls(device, sizeof[i32]() * 32i64).data as &mut [i32];
+    with hls(device) {
         let a = [1, 2, 3, 1, 1, 1, 1, 1, 1, 1];
         let b = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-
         let c = dot(a, b, 10);
 
+        ptr(0) = c;
     }
-    z
 }
