@@ -1,9 +1,0 @@
-fn main()-> () {
-    with hls() {
-        let mut k = 1;
-        for i in pipeline(0,20,30) {
-            //body
-            k += i;
-        }
-    }
-}
