@@ -1,1 +1,1 @@
-Introducing HLS code with OpenCL memorry allocations
+Introducing HLS code snippets
