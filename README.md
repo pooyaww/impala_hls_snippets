@@ -2,7 +2,7 @@
 
 To test new HLS features:
 
-source project.sh from anydsl and run tesl_hls .sh or test_ocl scripts providing a test name.
+source project.sh from anydsl and run desired test scripts providing a test name, without `.impala`
 
 Environment variables:
 `ANYDSL_FPGA` can be set to `SOC`, `HPC`, `HPC_STREAM`, `GMEM_OPT` to generate SoC streaming IPs, HPC kernel interface, HPC streaming IP and enabling memory optimizations respectively. GMEM_OPT can be combined with any other values.
