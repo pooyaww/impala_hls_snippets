@@ -1,0 +1,27 @@
+fn foo() -> i32 {
+    1
+}
+fn main()-> () {
+    let mut ret_hls =0;
+    with hls(0) {
+        let mut s = 2;
+        for i in range(10,20) {
+            s++ ;
+        }
+        range(10,20,|k| {s = k+5;});
+
+        ret_hls = foo() + s;
+    }
+}
+
+//fn main(i: int) -> int {
+//    let mut a = 0;
+//    if (i == 0) {
+//        a = 23;
+//    } else {
+//        a = 42;
+//    }
+//
+//    a
+//}
+//
