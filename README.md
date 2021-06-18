@@ -1,8 +1,12 @@
 # impala_hls_snippets
 
-To test new HLS features:
+To test new HLS features
+
+
 
 source project.sh from anydsl and run desired test scripts providing a test name, without `.impala`
+
+`artic` directory in `hls` contains tests for supporting the new frontend.
 
 Environment variables:
 `ANYDSL_FPGA` can be set to `SOC`, `HPC`, `HPC_STREAM`, `GMEM_OPT` to generate SoC streaming IPs, HPC kernel interface, HPC streaming IP and enabling memory optimizations respectively. GMEM_OPT can be combined with any other values.
