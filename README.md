@@ -17,12 +17,11 @@ uncomment (world.dump()) and recompile Thorin
 
 ``` mkdir build ```
 
-then execute scripts with desired flag: `d` for device code, `h` for host code,
+then execute scripts with desired flag: `d` device code, `h` host code,`d h` device and host codes,` d h c`device, host and impala codes
 
-`d h` device and host codes.
+``` ./test_hls.sh channel d h c```
 
-` d h c` for device, host and impala codes
 
-``` ./test_hls.sh channel d h```
+```./test_ocl.sh channel d h ```
 
 
