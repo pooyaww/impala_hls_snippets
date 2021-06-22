@@ -16,7 +16,14 @@ fi
 
 echo "Re-compiling and re-generating..."
 impala --emit-llvm ~/anydsl/runtime/platforms/impala/*.impala ../${name}.impala > hls_ir_${name}.dump
-mv ${name}.cl ${name}_cl.cpp
-vim -O ${name}_cl.cpp hls_ir_${name}.dump
-
+if [ $2 == "d" ]; then
+    mv ${name}.cl ${name}_cl.cpp
+    vim -O ${name}_cl.cpp hls_ir_${name}.dump
+elif [ $2 == "h" ]; then
+    vim -O ${name}.ll hls_ir_${name}.dump
+else
+    echo "ERROR!
+        d --> Device cose
+        h --> Host code"
+fi
 cd ..
