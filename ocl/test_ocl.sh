@@ -15,7 +15,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-impala --emit-llvm ~/anydsl/runtime/platforms/impala/*.impala ../${name}.impala > hls_ir_${name}.dump
+impala --emit-llvm ~/Projects/anydsl/runtime/platforms/impala/*.impala ../${name}.impala > hls_ir_${name}.dump
 if [ $2 == "d" ]; then
     mv ${name}.cl ${name}_cl.cpp
     vim -O ${name}_cl.cpp hls_ir_${name}.dump
