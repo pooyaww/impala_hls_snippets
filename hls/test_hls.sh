@@ -4,10 +4,11 @@ name=$1
 
 if [[ -v INTERFACE ]]; then
     intfc="${INTERFACE}"
+elif [[ -v ANYDSL_FPGA ]]; then
+    intfc="${ANYDSL_FPGA}"
 else
     intfc="HPC"
 fi
-
 
 if [ -z "$1" ]; then
     echo "No test name supplied"
