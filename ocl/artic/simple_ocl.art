@@ -1,0 +1,10 @@
+#[export]
+fn main() -> () {
+    let device = 0;
+    let ptr = alloc_opencl(device, sizeof[i32]() * 4).data as &mut [i32];
+
+    opencl(device,(1,1,1),(1,1,1), || {
+        let mut a : i32;
+        ptr(0) = a;
+    });
+}
