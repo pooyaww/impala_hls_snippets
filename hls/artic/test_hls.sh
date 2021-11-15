@@ -15,11 +15,6 @@ if [ -z "$1" ]; then
     exit
 fi
 
-if [ -z "$1" ]; then
-    echo "No test name supplied"
-    exit
-fi
-
 cd build
 
 #clean up
@@ -29,7 +24,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-artic ~/anydsl/runtime/platforms/artic/*.impala ../${name}.impala --emit-llvm -o ${name} > hls_host_ir_${name}.dump
+artic --hls-flags ${intfc} ~/Projects/anydsl/runtime/platforms/artic/*.impala ../${name}.art --emit-llvm -o ${name} > hls_host_ir_${name}.dump
 if [ $2 == "d" ] && [ -z "$3" ] && [ -z "$4" ]; then
     mv ${name}.hls ${name}.cpp
     vim -O hls_host_ir_${name}.dump ${name}.cpp
