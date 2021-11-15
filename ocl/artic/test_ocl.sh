@@ -15,7 +15,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-artic  ~/Projects/anydsl/runtime/platforms/artic/*.impala ../${name}.art > hls_ir_${name}.dump --emit-llvm -o ${name}
+artic  ${ANYDSL_INSTALL}/runtime/platforms/artic/*.impala ../${name}.art > hls_ir_${name}.dump --emit-llvm -o ${name}
 if [ $2 == "d" ]; then
     echo ${name}
     mv ${name}.cl ${name}_cl.cpp
