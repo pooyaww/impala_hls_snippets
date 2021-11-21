@@ -1,5 +1,8 @@
 #!/bin/bash
-name=$1
+basename=$1
+
+name="${basename%.*}"
+echo $name
 
 if [ -z "$1" ]; then
     echo "No test name supplied"

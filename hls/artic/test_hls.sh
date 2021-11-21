@@ -1,6 +1,8 @@
 #!/bin/bash
-name=$1
+basename=$1
 
+name="${basename%.*}"
+echo $name
 
 if [[ -v INTERFACE ]]; then
     intfc="${INTERFACE}"

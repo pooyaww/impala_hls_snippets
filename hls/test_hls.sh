@@ -1,6 +1,9 @@
 #!/bin/bash
 
-name=$1
+basename=$1
+
+name="${basename%.*}"
+echo $name
 
 if [[ -v INTERFACE ]]; then
     intfc="${INTERFACE}"
@@ -24,7 +27,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-impala --hls-flags ${intfc}  ${ANYDSL_INSTALL}/runtime/platforms/impala/*.impala ../${name}.impala --emit-llvm > hls_host_ir_${name}.dump 
+impala --hls-flags ${intfc} ${ANYDSL_INSTALL}/runtime/platforms/impala/*.impala ../${name}.impala --emit-llvm > hls_host_ir_${name}.dump 
 if [ $2 == "d" ] && [ -z "$3" ] && [ -z "$4" ]; then
     mv ${name}.hls ${name}.cpp
     vim -O hls_host_ir_${name}.dump ${name}.cpp

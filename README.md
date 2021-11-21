@@ -4,7 +4,7 @@ To test new HLS features
 
 
 
-source project.sh from anydsl and run desired test scripts providing a test name, without `.impala` or `.art` 
+source project.sh from anydsl and run desired test scripts providing a test name.
 
 then deterimne ANYDSL installation folder:
 `export ANYDSL_INSTALL=<path-to-anydsl-folder>`
