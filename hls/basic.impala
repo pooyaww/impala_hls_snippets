@@ -1,0 +1,8 @@
+//extern "thorin" {
+//    fn hls(dev: i32, body: fn() -> ()) -> ();
+//}
+
+fn main() -> i32 {
+    hls(0, || {});
+    42
+}
