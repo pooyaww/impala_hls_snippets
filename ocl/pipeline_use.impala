@@ -1,0 +1,15 @@
+fn main()-> () {
+    let grid   = (1, 1, 1);
+    let block  = (1, 1, 1);
+    let device = 0;
+    let ptr = alloc_opencl(device, sizeof[i32]() * 32i64).data as &mut [i32];
+    with opencl(device, grid, block) {
+        let mut k = 1;
+        let II = 3;
+        for i in pipeline(II,20,30) {
+            //body
+            k += i;
+        }
+        ptr(0) = k;
+    }
+}
