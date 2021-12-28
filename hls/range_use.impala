@@ -1,0 +1,12 @@
+fn main()-> () {
+    let device = 0;
+    let ptr = alloc_hls(device, sizeof[i32]() * 32i64).data as &mut [i32];
+    with hls(device) {
+        let mut k = 1;
+        for i in range(20,30) {
+            //body
+            k += i;
+        }
+//        ptr(0) = k;
+    }
+}
