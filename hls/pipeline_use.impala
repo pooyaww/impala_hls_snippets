@@ -8,6 +8,6 @@ fn main()-> () {
             //body
             k += i;
         }
-        ptr(0) = k;
+//        ptr(0) = k;
     }
 }
