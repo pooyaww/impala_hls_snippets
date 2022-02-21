@@ -5,6 +5,11 @@ basename=$1
 name="${basename%.*}"
 echo $name
 
+if [[ -z ${ANYDSL_INSTALL} ]]; then
+    echo "Please set ANYDSL_INSTALL"
+    exit
+fi
+
 if [[ -v INTERFACE ]]; then
     intfc="${INTERFACE}"
 elif [[ -v ANYDSL_FPGA ]]; then
@@ -17,6 +22,7 @@ if [ -z "$1" ]; then
     echo "No test name supplied"
     exit
 fi
+
 
 cd build
 
