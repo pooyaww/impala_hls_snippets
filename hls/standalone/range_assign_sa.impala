@@ -1,0 +1,22 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+}
+
+fn range(a: int, b: int, body: fn(int)->()) -> () {
+    if a < b {
+        body(a);
+        range(a+1, b, body)
+    } else {
+        return()
+    }
+}
+
+fn main()-> () {
+    with hls(0) {
+    let mut k = 1;
+        for i in range(20,30){
+            k = 1;
+            //k += 1;
+        }
+    }
+}

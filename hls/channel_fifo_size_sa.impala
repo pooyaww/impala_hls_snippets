@@ -1,4 +1,4 @@
-struct channel_i33 {
+struct channel_i32 {
     data: i32,
     size: i32 //new field
 };
