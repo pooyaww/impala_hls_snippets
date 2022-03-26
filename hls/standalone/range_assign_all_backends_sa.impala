@@ -1,0 +1,52 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+    fn cuda(i32, (i32, i32, i32), (i32, i32, i32), fn() -> ()) -> ();
+    fn nvvm(i32, (i32, i32, i32), (i32, i32, i32), fn() -> ()) -> ();
+    fn opencl(i32, (i32, i32, i32), (i32, i32, i32), fn() -> ()) -> ();
+    fn amdgpu(i32, (i32, i32, i32), (i32, i32, i32), fn() -> ()) -> ();
+}
+
+fn range(a: int, b: int, body: fn(int)->()) -> () {
+    if a < b {
+        body(a);
+        range(a+1, b, body)
+    } else {
+        return()
+    }
+}
+
+fn test_body() -> () {
+
+    let mut k = 1;
+    for i in range(20,30){
+        k = 1;
+        //k += 1;
+    }
+}
+
+fn main()-> () {
+
+    let device = 0;
+    let grid = (1,1,1);
+    let block = (1,1,1);
+
+    with opencl(device, grid, block) {
+        @@test_body();
+    }
+
+    with cuda(device, grid, block) {
+        @@test_body();
+    }
+
+    with nvvm(device, grid, block) {
+        @@test_body();
+    }
+
+    with amdgpu(device, grid, block) {
+        @@test_body();
+    }
+
+//    with hls(device) {
+//        @@test_body();
+//    }
+}
