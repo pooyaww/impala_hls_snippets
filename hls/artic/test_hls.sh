@@ -4,6 +4,11 @@ basename=$1
 name="${basename%.*}"
 echo $name
 
+if [[ -z ${ANYDSL_INSTALL} ]]; then
+    echo "Please export or set ANYDSL_INSTALL"
+    exit
+fi
+
 if [[ -v INTERFACE ]]; then
     intfc="${INTERFACE}"
 elif [[ -v ANYDSL_FPGA ]]; then

@@ -1,0 +1,16 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+    fn pipeline(i32, i32, i32, fn(i32) -> ()) -> ();
+}
+
+fn main()-> () {
+    let device = 0;
+    with hls(device) {
+        let mut k = 1;
+        let II = 3;
+        for i in pipeline(II,20,30) {
+            //body
+            k += i;
+        }
+    }
+}

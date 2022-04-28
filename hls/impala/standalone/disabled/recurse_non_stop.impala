@@ -1,0 +1,15 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+    fn opencl(dev: i32, (i32,i32,i32), (i32,i32,i32), body: fn() -> ()) -> ();
+}
+
+fn loop() -> () {
+    loop();
+}
+
+
+fn main() -> () {
+    with opencl(0,(1,1,1),(1,1,1)) {
+        loop();
+    }
+}

@@ -1,0 +1,18 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+}
+
+fn loop(i:i32) -> () {
+    if (i ==0) {
+        return;
+    } else {
+        loop(i-1);
+    }
+}
+
+
+fn main() -> () {
+    with hls(0) {
+        loop(5);
+    }
+}

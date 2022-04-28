@@ -1,0 +1,9 @@
+fn main()-> () {
+    with hls(0) {
+    let mut k = 1;
+        for i in range(20,30){
+            k = 1;
+            //k += 1;
+        }
+    }
+}

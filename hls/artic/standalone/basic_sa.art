@@ -1,0 +1,7 @@
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+
+#[export]
+fn main() -> i32 {
+    hls(0, || {});
+    42
+}

@@ -1,13 +1,10 @@
 fn main() -> () {
-//    let device = 0;
-    let ptr = alloc_hls(0, sizeof[i32]() * 4i64).data as &mut [i32];
-    let mut b = 0;
-    let c = 10;
-
     let device = 0;
-//    with hls(device) {
+    let ptr = alloc_hls(0, sizeof[i32]() * 4i64).data as &mut [i32];
+//  let mut b = 0;
+    let c = 10;
     with hls(device) {
-//    let mut b = 0;
+    let mut b = 0;
         let mut a : i32;
         ptr(0) = a;
         b = b + c;
