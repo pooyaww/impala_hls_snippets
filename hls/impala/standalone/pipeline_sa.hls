@@ -1,0 +1,67 @@
+
+#include <hls_stream.h>
+#include <hls_math.h>
+
+typedef   int8_t  i8;
+typedef  uint8_t  u8;
+typedef  int16_t i16;
+typedef uint16_t u16;
+typedef  int32_t i32;
+typedef uint32_t u32;
+typedef  int64_t i64;
+typedef uint64_t u64;
+typedef    float f32;
+typedef   double f64;
+
+extern "C" {
+
+#ifndef __SYNTHESIS__
+void hls_top();
+void lambda_1333();
+#endif /* __SYNTHESIS__ */
+
+void lambda_1333() {
+    i32   lambda_2299;
+    i32 p_lambda_2299;
+    i32 k_2291_slot;
+    i32* k_2291 = &k_2291_slot;
+    i32 _2303;
+    i32 _2305;
+    i32 _2306;
+    {
+        (*k_2291 = 1);
+        int i2278;
+        for (i2278 = 20; i2278 < 30; i2278++) {
+            #pragma HLS PIPELINE II=3
+            p_lambda_2299 = i2278;
+            goto lambda_2297;
+            
+        pipeline_continue_2300: continue;
+        }
+        goto lambda_1333_2314;
+    }
+lambda_2297: {
+        lambda_2299 = p_lambda_2299;
+        _2303 = *k_2291;
+        _2305 = (_2303);
+        _2306 = (_2305 + lambda_2299);
+        (*k_2291 = _2306);
+        goto pipeline_continue_2300;
+    }
+lambda_1333_2314: {
+        return void();
+    }
+}
+
+void hls_top() {
+    #pragma HLS top name = hls_top
+{
+        lambda_1333();
+        
+    }
+hls_top_2319: {
+        return void();
+    }
+}
+
+} /* extern "C" */
