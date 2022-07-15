@@ -1,0 +1,10 @@
+#[import(cc = "thorin")] fn hls(_dev: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+
+#[export]
+fn main() -> i32 {
+    hls(0, || {});  // memory to stream (CGRA)
+    cgra(0, || {}); // computing on CGRA
+    hls(0, || {});  // stream (CGRA) to memory
+    42
+}

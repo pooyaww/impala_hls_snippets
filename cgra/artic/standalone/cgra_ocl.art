@@ -1,0 +1,9 @@
+#[import(cc = "thorin")] fn opencl(_dev: i32, _grid: (i32, i32, i32), _block: (i32, i32, i32), _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+
+#[export]
+fn main() -> i32 {
+    cgra(0, || {});
+    opencl(0 , (1,1,1), (1,1,1), || {});
+    42
+}

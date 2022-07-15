@@ -1,0 +1,8 @@
+extern "thorin" {
+    fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+}
+
+fn main()-> () {
+    with cgra(0) {
+    }
+}

@@ -1,2 +1,9 @@
 build/
 tags
+*.ll
+*.dump
+*.hls
+*.cpp
+*.cgra
+*.cuda
+*.cl

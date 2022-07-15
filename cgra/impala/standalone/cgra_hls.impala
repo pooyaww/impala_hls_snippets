@@ -1,0 +1,10 @@
+extern "thorin" {
+    fn hls(dev: i32, body: fn() -> ()) -> ();
+    fn cgra(dev: i32, body: fn() -> ()) -> ();
+}
+
+fn main() -> i32 {
+    with hls(0) {};
+    with cgra(0) {};
+    42
+}
