@@ -1,4 +1,4 @@
-#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
 
 #[export]
 fn main() -> i32 {
