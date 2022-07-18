@@ -1,0 +1,9 @@
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+
+#[export]
+fn main() -> i32 {
+    cgra(0, || {});
+    cgra(0, || {});
+    cgra(0, || {});
+    42
+}
