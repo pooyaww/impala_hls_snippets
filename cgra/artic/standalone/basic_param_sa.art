@@ -1,0 +1,16 @@
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+
+#[export]
+fn main(a: bool) -> &mut i32 {
+    let test = 5;
+    let out : &mut i32;
+
+    cgra(0, || {
+
+        if (a) {
+    let out = (test) as &mut i32;
+        }
+
+    });
+    out
+}

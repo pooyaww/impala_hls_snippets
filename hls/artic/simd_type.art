@@ -1,0 +1,12 @@
+fn @write(buf: &mut simd[i32 * 4], i: i32, v: simd[i32 * 4]) -> () { bitcast[&mut addrspace(1)[simd[i32 * 4]]](buf)(i) = v }
+
+#[export]
+fn main(i: simd[i32 * 4]) -> () {
+    let device = 0;
+    let ptr_out = alloc_hls(device, sizeof[simd[i32 *4]]()).data as &mut simd[i32 * 4];
+
+    hls(device, || {
+        write(ptr_out,2, simd[1, 2, 3, 4]);
+    });
+
+}
