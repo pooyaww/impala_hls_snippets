@@ -42,7 +42,7 @@ elif [ $2 == "d" ] && [ $3 == "h" ] && [ -z "$4" ]; then
     vim -O ${name}.ll cgra_host_ir_${name}.dump ${name}.cpp
 elif [ $2 == "d" ] && [ $3 == "h" ] && [ $4 == "c" ]; then
     mv ${name}.cgra ${name}.cpp
-    vim -O ../${name}.impala ${name}.ll cgra_host_ir_${name}.dump ${name}.cpp
+    vim -O ../${name}.art ${name}.ll cgra_host_ir_${name}.dump ${name}.cpp
 else
     echo "ERROR!
     d --> decvice
