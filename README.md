@@ -25,3 +25,6 @@ then execute scripts with desired flag: `d` device code, `h` host code,`d h` dev
 
 
 or execute `./test_hls_all.sh` for checking the compilation of all test cases.
+
+
+In CGRA tests whenever there is no call to runtime and memory allocations, a testbench for checking the functionality of CGRA kernels is generated, otherwise the host code will include calls to XRT for managing FPGA and CGRA executions. 
