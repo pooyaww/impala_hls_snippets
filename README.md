@@ -23,3 +23,5 @@ then execute scripts with desired flag: `d` device code, `h` host code,`d h` dev
 
 ```./test_ocl.sh channel d h ```
 
+
+or execute `./test_hls_all.sh` for checking the compilation of all test cases.
