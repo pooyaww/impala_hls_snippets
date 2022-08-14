@@ -45,7 +45,15 @@ elif [[ $2 == "d" ]] && [[ $3 == "h" ]] && [[ $4 == "c" ]]; then
 elif [[ -z "$2" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     mv ${name}.cgra ${name}_cgra.cpp
     mv ${name}.hls ${name}_hls.cpp
-    vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp
+
+    count=`ls -1 *.cl 2>/dev/null | wc -l`
+    if [[ $count != 0 ]]; then
+        echo "OpenCL kernel found!"
+        mv ${name}.cl ${name}_cl.cpp
+        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp ${name}_cl.cpp
+    else
+        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp
+    fi
 else
     echo "ERROR!
     d --> hls decvice
