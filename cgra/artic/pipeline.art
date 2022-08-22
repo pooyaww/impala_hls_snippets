@@ -1,0 +1,14 @@
+#[export]
+fn main()-> () {
+    let device = 0;
+    cgra(device, || {
+        let mut k = 1;
+        let II = 3;
+        for i in pipeline(II,20,30) {
+            //body
+            k += i;
+        }
+    });
+}
+
+
