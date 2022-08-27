@@ -1,0 +1,18 @@
+#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin", name = "pipeline")] fn thorin_pipeline(_initiation_interval: i32, _lower: i32, _upper: i32, _body: fn(i32) -> ())     -> ();
+fn @pipeline(body: fn (i32) -> ()) = @|initiation_interval: i32, lower: i32, upper: i32| thorin_pipeline(initiation_interval, lower, upper    , body);
+
+#[export]
+fn main()-> () {
+    let device = 0;
+    cgra(device, || {
+        let mut k = 1;
+        let II = 3;
+        for i in pipeline(II,20,30) {
+            //body
+            k += i;
+        }
+    });
+}
+
+
