@@ -1,0 +1,20 @@
+#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+
+fn foo(t: i32) -> i32 {
+    let e = t + 1;
+    e
+}
+
+#[export]
+fn main(a: bool) -> i32 {
+    let test = 5;
+    let out = 0 as &mut i32 ;
+
+    cgra(0, || {
+        let temp = foo(test) as &mut i32;
+
+        *out = (temp as i32) * 2;
+
+   });
+    *out
+}

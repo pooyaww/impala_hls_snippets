@@ -44,7 +44,8 @@ fn main() -> () {
     });
 
     cgra(device,|| {
-        let temp = read_channel_i32(&mut ch_hls_1);
+        let mut temp = read_channel_i32(&mut ch_hls_1);
+        temp++;
         write_channel_i32(&mut ch_cgra, temp);
     });
 
