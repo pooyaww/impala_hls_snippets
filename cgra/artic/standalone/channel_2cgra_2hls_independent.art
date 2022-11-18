@@ -45,10 +45,10 @@ fn main() -> () {
     });
 
     cgra(device,|| {
-//        write_channel_i32(&mut ch2, read(ptr, 0));
+        write_channel_i32(&mut ch2, read(ptr, 0));
     });
 
-//    cgra(device, || {
-//        write(ptr, 0, read_channel_i32(ch2));
-//    });
+    cgra(device, || {
+        write(ptr, 0, read_channel_i32(ch2));
+    });
 }
