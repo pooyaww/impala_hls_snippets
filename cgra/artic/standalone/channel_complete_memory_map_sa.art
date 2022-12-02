@@ -1,0 +1,55 @@
+// using channels to switch between FPGA and CGRA
+
+#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
+#[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
+#[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
+#[import(cc = "builtin")] fn sizeof[_]() -> i64;
+
+
+struct channel_i32 {
+    data: i32
+}
+
+struct Buffer {
+    data : &mut [i8],
+    size : i64,
+    device : i32
+}
+
+fn @alloc(device: i32, size: i64) = Buffer {
+    data = runtime_alloc(device, size),
+    size = size,
+    device = device
+};
+
+fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+static mut ch1 : channel_i32;
+static mut ch2 : channel_i32;
+
+#[export]
+fn main(a: i32) -> () {
+    let device = 0;
+    let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+    let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+
+    hls(device, || {
+        write_channel_i32(&mut ch1, read(ptr_in, 0));
+    });
+
+    cgra(device,|| {
+        let temp = read_channel_i32(&mut ch1) + a;
+        write_channel_i32(&mut ch2, temp);
+    });
+
+    hls(device,|| {
+        write(ptr_out, 0, read_channel_i32(&mut ch2) + a);
+    });
+
+
+}
