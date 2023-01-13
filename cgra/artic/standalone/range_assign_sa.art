@@ -1,0 +1,21 @@
+#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+
+fn @range(body: fn (i32) -> i32) {
+    fn loop(beg: i32, end: i32) -> () {
+        if beg < end {
+            @body(beg);
+            loop(beg + 1, end)
+        }
+    }
+    loop
+}
+
+#[export]
+fn main()-> () {
+    let mut k = 1;
+    cgra(0, || {
+        for i in range(20,30) {
+            k++
+        }
+    });
+}
