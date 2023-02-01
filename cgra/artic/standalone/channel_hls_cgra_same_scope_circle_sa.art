@@ -1,4 +1,5 @@
 // HLS and CGRA makes a circular dataflow
+// Nested scope needs to be addressed in Dataflow transformation due to circle detection
 // Needs C backend support
 
 #[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();

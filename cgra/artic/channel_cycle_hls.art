@@ -1,0 +1,20 @@
+static mut ch0 : channel[i32];
+static mut ch1 : channel[i32];
+//kernel0 should read ch1 also
+// at the moment only kernel1 writes on ch1
+#[export]
+fn main() -> () {
+    let device = 0;
+    let ptr = alloc_hls(device, sizeof[i32]() * 4:i64).data as &mut [i32];
+    let ptr1 = alloc_hls(device, sizeof[i32]() * 4:i64).data as &mut [i32];
+    hls(device,|| {
+        write_channel[i32](&mut ch0, ptr(0));
+        //ptr1(0) = read_channel_i32(&mut ch1);
+        read_channel[i32](&mut ch1);
+    });
+
+    hls(device,|| {
+        ptr(0) = read_channel[i32](&mut ch0);
+        write_channel[i32](&mut ch1, ptr(0));
+    });
+}

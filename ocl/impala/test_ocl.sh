@@ -20,7 +20,8 @@ fi
 echo ${ANYDSL_INSTALL}
 
 echo "Re-compiling and re-generating..."
-impala --emit-llvm ${ANYDSL_INSTALL}/runtime/platforms/impala/*.impala ../${name}.impala > hls_ir_${name}.dump
+#impala --emit-llvm ${ANYDSL_INSTALL}/runtime/platforms/impala/*.impala ../${name}.impala > hls_ir_${name}.dump
+impala --hls-flags HPC ${ANYDSL_INSTALL}/runtime/platforms/impala/*.impala ../${name}.impala --emit-llvm > hls_ir_${name}.dump
 if [ $2 == "d" ]; then
     mv ${name}.cl ${name}_cl.cpp
     vim -O ${name}_cl.cpp hls_ir_${name}.dump
