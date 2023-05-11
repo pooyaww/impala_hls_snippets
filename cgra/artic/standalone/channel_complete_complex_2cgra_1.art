@@ -57,13 +57,14 @@ fn main() -> () {
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
         let temp = read_channel_i32(&mut from_hls1_to_cgra1);
+        let temp_cgra = read_channel_i32(&mut from_cgra2_to_cgra1);
         write_channel_i32(&mut from_cgra1_to_hls2, temp);
     });
 
 
     // cgra2
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
-        let temp = read_channel_i32(&mut from_cgra2_to_cgra1);
+        write_channel_i32(&mut from_cgra2_to_cgra1, 0);
     });
 
     // hls2
