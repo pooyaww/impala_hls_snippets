@@ -1,6 +1,7 @@
 // using channels to switch between FPGA and CGRA
 
-#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+
+#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
@@ -34,6 +35,12 @@ static mut from_cgra1_to_hls2 : channel_i32;
 static mut from_hls1_to_hls2 : channel_i32;
 static mut from_cgra2_to_cgra1 : channel_i32;
 
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
+
 #[export]
 fn main() -> () {
     let device = 0;
@@ -47,14 +54,15 @@ fn main() -> () {
     });
 
     // cgra1
-    cgra(device,|| {
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
         let temp = read_channel_i32(&mut from_hls1_to_cgra1);
         write_channel_i32(&mut from_cgra1_to_hls2, temp);
     });
 
 
     // cgra2
-    cgra(device,|| {
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
         let temp = read_channel_i32(&mut from_cgra2_to_cgra1);
     });
 

@@ -1,7 +1,14 @@
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
+
 #[export]
 fn main()-> () {
-    let device = 0;
-    cgra(device, || {
+    let config_k : CGRA_CONFIG;
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, || {
         let mut k = 1;
         let II = 3;
         for i in pipeline(II,20,30) {

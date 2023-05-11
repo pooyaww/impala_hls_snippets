@@ -29,14 +29,19 @@ fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4)
 fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
 
+static mut ch1 : channel_i32;
+static mut ch2 : channel_i32;
+
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
     location: (i32, i32) = (-10, -10)
 }
 
-static mut ch1 : channel_i32;
-static mut ch2 : channel_i32;
+
+struct MEM {
+    mem: &mut[i32]
+}
 
 #[export]
 fn main() -> () {
@@ -44,19 +49,20 @@ fn main() -> () {
     let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
     let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
 
-    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
-    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
-        write_channel_i32(&mut ch1, read(ptr_in, 0));
+    let aa = MEM{mem = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32]};
+
+    hls(device, || {
+        //write_channel_i32(&mut ch1, read(ptr_in, 0));
+        write_channel_i32(&mut ch1, read(a, 0));
     });
 
-    let config_k2 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,2)};
-    cgra(config_k2.device, config_k2.runtime_ratio, config_k2.location,|| {
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {
         let temp = read_channel_i32(&mut ch1);
         write_channel_i32(&mut ch2, temp);
     });
 
-    let config_k3 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (2,2)};
-    cgra(config_k3.device, config_k3.runtime_ratio, config_k3.location,|| {
+    hls(device,|| {
         write(ptr_out, 0, read_channel_i32(&mut ch2));
     });
 

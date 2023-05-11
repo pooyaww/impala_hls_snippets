@@ -1,5 +1,5 @@
 #[import(cc = "thorin")] fn hls(_dev: i32, _body: fn() -> ()) -> ();
-#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
 
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
@@ -24,6 +24,11 @@ fn @alloc(device: i32, size: i64) = Buffer {
     device = device
 };
 
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
 
 fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
 fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
@@ -41,7 +46,8 @@ fn main() -> i32 {
         read(ptr, 0);
 
     });
-    cgra(0, || {});
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location,|| {});
 
     hls(device,|| {
         write(ptr, 0, 42);

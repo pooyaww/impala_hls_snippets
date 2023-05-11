@@ -2,6 +2,12 @@ static mut ch0 : channel[i32];
 static mut ch1 : channel[i32];
 //kernel0 should read ch1 also
 // at the moment only kernel1 writes on ch1
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
 #[export]
 fn main() -> () {
     let device = 0;
@@ -13,7 +19,8 @@ fn main() -> () {
         read_channel[i32](&mut ch1);
     });
 
-    cgra(device,|| {
+    let config_k : CGRA_CONFIG;
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, || {
         ptr(0) = read_channel[i32](&mut ch0);
         write_channel[i32](&mut ch1, ptr(0));
     });

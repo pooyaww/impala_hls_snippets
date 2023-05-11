@@ -1,4 +1,4 @@
-#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
@@ -29,6 +29,12 @@ fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32
 
 static mut ch : channel_i32;
 
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
+
 #[export]
 fn main() -> () {
     let device = 0;
@@ -38,7 +44,9 @@ fn main() -> () {
         write_channel_i32(&mut ch, read(ptr, 0));
     });
 
-    cgra(device,|| {
+    let config_k = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location,|| {
         write(ptr, 0, read_channel_i32(&mut ch));
     });
 }

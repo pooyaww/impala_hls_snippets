@@ -1,9 +1,18 @@
+
+
 #[import(cc = "thorin")] fn hls(_dev: i32, _body: fn() -> ()) -> ();
-#[import(cc = "thorin")] fn cgra(_dev: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
 
 #[export]
 fn main() -> i32 {
     hls(0, || {});
-    cgra(0, || {});
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, || {});
     42
 }

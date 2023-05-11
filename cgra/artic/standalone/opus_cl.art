@@ -1,6 +1,6 @@
 // using channels to switch between FPGA and CGRA
 
-#[import(cc = "thorin")] fn cgra(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn opencl(dev: i32, grid: (i32, i32, i32), block: (i32, i32, i32), body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
@@ -29,6 +29,13 @@ fn @alloc(device: i32, size: i64) = Buffer {
 fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
 fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10)
+}
+
 
 static mut ch_df : channel_i32;
 static mut ch_cl_df : channel_i32;
@@ -60,7 +67,8 @@ fn main() -> () {
         write_channel_i32(&mut ch_mixed_1, read(ptr_in_mixed, 0));
     });
 
-    cgra(device,|| {
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location,|| {
         let temp = read_channel_i32(&mut ch_mixed_1);
         write_channel_i32(&mut ch_mixed_2, temp);
     });

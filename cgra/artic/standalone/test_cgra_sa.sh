@@ -12,6 +12,8 @@ else
     intfc="HPC"
 fi
 
+fast_emu="fast_emu"
+
 if [ -z "$1" ]; then
     echo "No test name supplied"
     exit
@@ -26,8 +28,11 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-artic --hls-flags ${intfc} ../${name}.art --emit-llvm -o ${name} > hls_host_ir_${name}.dump
-if [[ $2 == "d" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
+artic --log-level warn --hls-flags ${intfc},${fast_emu} ../${name}.art --emit-llvm -o ${name} > hls_host_ir_${name}.dump
+
+if [[ $2 == "cf" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
+    vim -O ${name}.cfg
+elif [[ $2 == "d" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     mv ${name}.cgra ${name}.cpp
     vim -O hls_host_ir_${name}.dump ${name}.cpp
 elif [[ $2 == "i" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
@@ -52,9 +57,9 @@ elif [[ -z "$2" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     if [[ $count != 0 ]]; then
         echo "OpenCL kernel found!"
         mv ${name}.cl ${name}_cl.cpp
-        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp ${name}_cl.cpp
+        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}.cfg ${name}_cgra.cpp ${name}_cl.cpp -c ":tabnew ../${name}.art | tabfirst"
     else
-        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp
+        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}.cfg ${name}_cgra.cpp  -c ":tabedit ../${name}.art | tabfirst" 
     fi
 else
     echo "ERROR!
@@ -62,6 +67,7 @@ else
     d --> hls decvice
     h --> host
     c --> source code
+    cf --> cgra config code
     hls cgra --> hls and cgra device code"
 fi
 
