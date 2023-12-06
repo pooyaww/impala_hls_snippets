@@ -1,23 +1,29 @@
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
 #[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+//fn @read(buf: &mut i32) -> i32 { bitcast[addrspace(1)i32](buf)}
+//fn @read(buf: i32) -> i32 { bitcast[&addrspace(1)i32](buf)}
+
+//fn @read(buf: i32) -> i32 {bitcast[&addrspace(1)i32](buf)}
+
 
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
     location: (i32, i32) = (-10, -10),
-    vector_size: i32 = 4,
+    vector_size: i32 = 4
 }
 
 #[export]
-fn main(a: bool) -> &mut i32 {
-    let test_ = 5;
-    let mut out : i32;
+fn main(a: i32) -> &mut i32 {
+    let test_ = 5 ;
+    let mut out: i32;
 
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size,|| {
 
-        if (a) {
-            out = test_;
+        if (a == 1) {
+            out = test_ + a;
         }
    });
-    out
+    out as &mut i32
 }

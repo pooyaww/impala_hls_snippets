@@ -1,6 +1,6 @@
 // using channels to switch between FPGA and CGRA
 
-#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
@@ -29,7 +29,8 @@ fn @alloc(device: i32, size: i64) = Buffer {
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
-    location: (i32, i32) = (-10, -10)
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 4
 }
 fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
 fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
@@ -54,7 +55,7 @@ fn main() -> () {
     });
 
     // cgra1
-    cgra(config_k.device, config_k.runtime_ratio, config_k.location,|| {
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size, || {
         let temp = read_channel_i32(&mut from_hls1_to_cgra1);
         write_channel_i32(&mut from_cgra1_to_hls2, temp);
     });
@@ -67,7 +68,7 @@ fn main() -> () {
     });
 
     // cgra2
-    cgra(config_k.device, config_k.runtime_ratio, config_k.location,|| {
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size,|| {
         write(ptr_out, 0, read_channel_i32(&mut from_hls2_to_cgra2));
         write(ptr_out, 1, read_channel_i32(&mut from_cgra2_to_hls3));
     });

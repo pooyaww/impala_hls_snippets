@@ -1,7 +1,7 @@
 // using channels to switch between FPGA and CGRA
 
 #[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
-#[import(cc = "thorin")] fn opencl(dev: i32, grid: (i32, i32, i32), block: (i32, i32, i32), body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
 #[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
@@ -29,16 +29,18 @@ fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4)
 fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
 
+static mut ch_hls_1  : channel_i32;
+static mut ch_cgra_1_1 : channel_i32;
+static mut ch_cgra_1_2 : channel_i32;
+static mut ch_cgra_2 : channel_i32;
+static mut ch_hls_2  : channel_i32;
+
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
     location: (i32, i32) = (-10, -10),
-    vector_size : i32 = 4
+    vector_size: i32 = 4
 }
-
-
-static mut ch1 : channel_i32;
-static mut ch2 : channel_i32;
 
 #[export]
 fn main() -> () {
@@ -46,22 +48,33 @@ fn main() -> () {
     let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
     let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
 
-    let grid  = (1,1,1);
-    let block = (1,1,1);
+    hls(device, || {
+        write_channel_i32(&mut ch_hls_1, read(ptr_in, 0));
+    });
+
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
-
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
-        write_channel_i32(&mut ch1, read(ptr_in, 0));
+        let mut temp = read_channel_i32(&mut ch_hls_1);
+        temp++;
+        write_channel_i32(&mut ch_cgra_1_1, temp);
+        write_channel_i32(&mut ch_cgra_1_2, temp);
     });
 
-    opencl(device, grid, block, || {
-        let temp = read_channel_i32(&mut ch1);
-        write_channel_i32(&mut ch2, temp);
+    let config_k2 = CGRA_CONFIG{device = 0, runtime_ratio = 2, location = (1,1)};
+    cgra(config_k2.device, config_k2.runtime_ratio, config_k2.location, config_k2.vector_size, || {
+        let temp1 = read_channel_i32(&mut ch_cgra_1_1);
+        let temp2 = read_channel_i32(&mut ch_cgra_1_2);
+        write_channel_i32(&mut ch_cgra_2, temp1 + temp2);
     });
 
-    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
-        write(ptr_out, 0, read_channel_i32(&mut ch2));
+    let config_k3 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (2,3)};
+    cgra(config_k3.device, config_k3.runtime_ratio, config_k3.location, config_k3.vector_size, || {
+        let temp = read_channel_i32(&mut ch_cgra_2);
+        write_channel_i32(&mut ch_hls_2, temp);
     });
 
+    hls(device,|| {
+        write(ptr_out, 0, read_channel_i32(&mut ch_hls_2));
+    });
 
 }

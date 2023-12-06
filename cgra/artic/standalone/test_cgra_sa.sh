@@ -33,24 +33,24 @@ artic --log-level warn --hls-flags ${intfc},${fast_emu} ../${name}.art --emit-ll
 if [[ $2 == "cf" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     vim -O ${name}.cfg
 elif [[ $2 == "d" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
-    mv ${name}.cgra ${name}.cpp
+    mv ${name}.cxx ${name}.cpp
     vim -O hls_host_ir_${name}.dump ${name}.cpp
 elif [[ $2 == "i" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     vim hls_host_ir_${name}.dump
 elif [[ $2 == "hls" ]] && [[ $3 == "cgra" ]] && [[ -z "$4" ]] ; then
-    mv ${name}.cgra ${name}_cgra.cpp
+    mv ${name}.cxx ${name}_cgra.cpp
     mv ${name}.hls ${name}_hls.cpp
     vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp
 elif [[ $2 == "h" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     vim -O ${name}.ll hls_host_ir_${name}.dump
 elif [[ $2 == "d" ]] && [[ $3 == "h" ]] && [[ -z "$4" ]]; then
-    mv ${name}.cgra ${name}.cpp
+    mv ${name}.cxx ${name}.cpp
     vim -O ${name}.ll hls_host_ir_${name}.dump ${name}.cpp
 elif [[ $2 == "d" ]] && [[ $3 == "h" ]] && [[ $4 == "c" ]]; then
-    mv ${name}.cgra ${name}.cpp
+    mv ${name}.cxx ${name}.cpp
     vim -O ../${name}.art ${name}.ll hls_host_ir_${name}.dump ${name}.cpp
 elif [[ -z "$2" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
-    mv ${name}.cgra ${name}_cgra.cpp
+    mv ${name}.cxx ${name}_cgra.cpp
     mv ${name}.hls ${name}_hls.cpp
 
     count=`ls -1 *.cl 2>/dev/null | wc -l`
@@ -59,7 +59,7 @@ elif [[ -z "$2" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
         mv ${name}.cl ${name}_cl.cpp
         vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}.cfg ${name}_cgra.cpp ${name}_cl.cpp -c ":tabnew ../${name}.art | tabfirst"
     else
-        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}.cfg ${name}_cgra.cpp  -c ":tabedit ../${name}.art | tabfirst" 
+        vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}.cfg ${name}_cgra.cpp ${name}_graph.cxx  -c ":tabedit ../${name}.art | tabfirst" 
     fi
 else
     echo "ERROR!

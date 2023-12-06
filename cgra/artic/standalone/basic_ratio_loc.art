@@ -1,14 +1,15 @@
-#[import(cc = "thorin")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _body: fn() -> ()) -> ();
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
 
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
-    location: (i32, i32) = (-10, -10) // we can assign (-10,-10) as deafult value and remove location from cgra_graphs to let the compiler secide on location bu automatic routing
+    location: (i32, i32) = (-10, -10), // we can assign (-10,-10) as deafult value and remove location from cgra_graphs to let the compiler secide on location bu automatic routing
+    vector_size: i32 = 1
 }
 
 #[export]
 fn main() -> i32 {
     let config_k = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
-    cgra(config_k.device, config_k.runtime_ratio, config_k.location, || {});
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size,|| {});
     42
 }
