@@ -1,0 +1,173 @@
+// using channels to switch between FPGA and CGRA
+
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "device", name = "read_channel")] fn read_channel[T](&mut channel[T]) -> T;
+#[import(cc = "device", name = "write_channel")] fn write_channel[T] (&mut channel[T], T) -> ();
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
+#[import(cc = "builtin")] fn sizeof[_]() -> i64;
+#[import(cc = "C", name = "anydsl_synchronize")] fn runtime_synchronize(_device: i32) -> ();
+#[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
+#[import(cc = "C", name = "anydsl_copy")] fn runtime_copy(_src_device: i32, _src_ptr: &[i8], _src_offset: i64, _dst_device: i32, _dst_ptr: &mut [i8], _dst_offset: i64, _size: i64) -> ();
+#[import(cc = "C", name = "anydsl_release")] fn runtime_release(_device: i32, _ptr: &[i8]) -> ();
+
+struct Buffer {
+    data : &mut [i8],
+    size : i64,
+    device : i32
+}
+
+fn @alloc(device: i32, size: i64) = Buffer {
+    data = runtime_alloc(device, size),
+    size = size,
+    device = device
+};
+
+fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
+fn @alloc_cpu(size: i64) = alloc(0, size);
+fn @alloc_hls(dev: i32, size: i64) -> Buffer { alloc(runtime_device(2, dev), size) }
+fn @alloc_cgra(dev: i32, size: i64) -> Buffer { alloc(runtime_device(2, dev), size) }
+fn @copy(src: Buffer, dst: Buffer) = runtime_copy(src.device, src.data, 0, dst.device, dst.data, 0, src.size);
+fn @synchronize_hls(dev: i32) -> () { runtime_synchronize(runtime_device(2, dev)) }
+fn @synchronize_cgra(dev: i32) -> () { runtime_synchronize(runtime_device(2, dev)) }
+fn @release(buf: Buffer) = runtime_release(buf.device, buf.data);
+
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+
+struct channel[T] {
+    data: T
+}
+
+
+struct WorkItem {
+    tidx  : fn() -> i32,
+    tidy  : fn() -> i32,
+    tidz  : fn() -> i32,
+    bidx  : fn() -> i32,
+    bidy  : fn() -> i32,
+    bidz  : fn() -> i32,
+    gidx  : fn() -> i32,
+    gidy  : fn() -> i32,
+    gidz  : fn() -> i32,
+    bdimx : fn() -> i32,
+    bdimy : fn() -> i32,
+    bdimz : fn() -> i32,
+    gdimx : fn() -> i32,
+    gdimy : fn() -> i32,
+    gdimz : fn() -> i32,
+    nblkx : fn() -> i32,
+    nblky : fn() -> i32,
+    nblkz : fn() -> i32
+}
+
+struct Accelerator {
+    exec          : fn(fn(WorkItem) -> ()) -> fn((i32, i32, i32), (i32, i32, i32)) -> (), // fn(grid, block)->()
+    sync          : fn() -> (),
+    alloc         : fn(i64) -> Buffer,
+    //alloc_unified : fn(i64) -> Buffer,
+    barrier       : fn() -> ()
+}
+
+
+
+fn @hls_accelerator(dev: i32) = Accelerator {
+    exec = @|body| |_grid, _block| {
+        let work_item = WorkItem {
+            tidx  = @|| 0, tidy  = @|| 0, tidz  = @|| 0,
+            bidx  = @|| 0, bidy  = @|| 0, bidz  = @|| 0,
+            gidx  = @|| 0, gidy  = @|| 0, gidz  = @|| 0,
+            bdimx = @|| 1, bdimy = @|| 1, bdimz = @|| 1,
+            gdimx = @|| 1, gdimy = @|| 1, gdimz = @|| 1,
+            nblkx = @|| 1, nblky = @|| 1, nblkz = @|| 1
+        };
+        hls(dev, || @body(work_item));
+    },
+    sync          = @|| (), //synchronize_hls(dev),
+    alloc         = @|size| alloc_hls(dev, size),
+    //alloc_unified = @|size| alloc_hls_unified(dev, size),
+    barrier       = @|| ()
+};
+
+fn @cgra_accelerator(dev: i32, runtime_ratio: f32, location: (i32 ,i32), vector_size: i32) = Accelerator {
+    exec = @|body| |_grid, _block| {
+        let work_item = WorkItem {
+            tidx  = @|| 0, tidy  = @|| 0, tidz  = @|| 0,
+            bidx  = @|| 0, bidy  = @|| 0, bidz  = @|| 0,
+            gidx  = @|| 0, gidy  = @|| 0, gidz  = @|| 0,
+            bdimx = @|| 1, bdimy = @|| 1, bdimz = @|| 1,
+            gdimx = @|| 1, gdimy = @|| 1, gdimz = @|| 1,
+            nblkx = @|| 1, nblky = @|| 1, nblkz = @|| 1
+        };
+        cgra(dev, runtime_ratio, location, vector_size, || @body(work_item));
+    },
+    sync          = @|| (), //synchronize_cgra(dev),
+    alloc         = @|size| alloc_cgra(dev, size),
+    //alloc_unified = @|size| alloc_cgra_unified(dev, size),
+    barrier       = @|| ()
+};
+
+
+fn @unroll_step(body: fn(i32) -> ()) {
+    fn @(?beg & ?end & ?step) loop(beg: i32, end: i32, step: i32) -> () {
+        if beg < end {
+            @body(beg);
+            loop(beg + step, end, step)
+        }
+    }
+    loop
+}
+
+fn @range(body: fn(i32) -> ()) = @|lower: i32, upper: i32| unroll_step(body)($lower, $upper, 1);
+
+fn @iteration(body: fn(i32, i32) -> ()) = @|acc: Accelerator, width: i32, height: i32| {
+    let grid  = (1, 1, 1);
+    let block = (1, 1, 1);
+    for work_item in acc.exec(grid, block) {
+        for x in range(0, width) {
+            for y in range(0, height) {
+                @body(x, y);
+            }
+        }
+    }
+};
+
+
+static mut ch1 : channel[i32];
+static mut ch2 : channel[i32];
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 1
+}
+
+#[export]
+fn main() -> () {
+
+    let width  = 2048;
+    let height = 2048;
+
+    let device = 0;
+    let config_k = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (-1, -1), vector_size = 1};
+    let fpga = hls_accelerator(device);
+    let aie = cgra_accelerator(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size);
+    let ptr_in = alloc_hls(device, sizeof[i32]() * 4:i64).data as &mut [i32];
+    let ptr_out = alloc_hls(device, sizeof[i32]() * 4:i64).data as &mut [i32];
+
+    hls(device, || {
+        write_channel(&mut ch1, read(ptr_in, 0));
+    });
+
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size, || {
+        let temp = read_channel(&mut ch1);
+        write_channel(&mut ch2, temp);
+    });
+
+    hls(device,|| {
+        write(ptr_out, 0, read_channel(&mut ch2));
+    });
+
+}
