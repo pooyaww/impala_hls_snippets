@@ -12,11 +12,6 @@
 #[import(cc = "C", name = "anydsl_release")] fn runtime_release(_device: i32, _ptr: &[i8]) -> ();
 #[import(cc = "C", name = "anydsl_print_string")] fn print_string(_: &[u8]) -> ();
 
-fn @auto_pipeline(body: fn(i32) -> ()) = @|lower: i32, upper: i32| {
-    let II = 0; // Auto II
-    thorin_pipeline(II, lower, upper, body)
-};
-
 
 struct Buffer {
     data : &mut [i8],
