@@ -148,8 +148,6 @@ struct CGRA_CONFIG {
     vector_size: i32 = 1
 }
 
-
-
 // using channels for FPGA to CGRA stream
 #[export]
 fn main() -> i32 {

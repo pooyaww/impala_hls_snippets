@@ -2,12 +2,13 @@
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
-    location: (i32, i32) = (-10, -10)
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 4
 }
 
 #[export]
 fn main() -> i32 {
     let config_k : CGRA_CONFIG;
-    cgra(config_k.device, config_k.runtime_ratio, config_k.location, || {});
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size, || {});
     42
 }

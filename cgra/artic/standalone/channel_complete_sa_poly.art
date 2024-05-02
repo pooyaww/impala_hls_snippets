@@ -29,7 +29,7 @@ fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4)
 fn @read[T](buf: &mut [T], i: i32) -> T { bitcast[&addrspace(1)[T]](buf)(i)}
 fn @write[T](buf: &mut [T], i: i32, v: T) -> () { bitcast[&mut addrspace(1)[T]](buf)(i) = v }
 
-type TYPE = i8;
+type TYPE = i32;
 //TODO: replace types with TYPE
 
 static mut ch1 : channel[TYPE];

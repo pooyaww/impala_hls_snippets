@@ -1,0 +1,145 @@
+fn @read[T](buf: Buffer, i: i32) -> T { bitcast[&addrspace(1)[T]](buf.data)(i) }
+fn @write[T](buf: Buffer, i: i32, v: T) -> () { bitcast[&mut addrspace(1)[T]](buf.data)(i) = v }
+
+//fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+//fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+//fn @hls_accelerator(dev: i32) = Accelerator {
+//    exec = @|body| |_grid, _block| {
+//        let work_item = WorkItem {
+//            tidx  = @|| 0, tidy  = @|| 0, tidz  = @|| 0,
+//            bidx  = @|| 0, bidy  = @|| 0, bidz  = @|| 0,
+//            gidx  = @|| 0, gidy  = @|| 0, gidz  = @|| 0,
+//            bdimx = @|| 1, bdimy = @|| 1, bdimz = @|| 1,
+//            gdimx = @|| 1, gdimy = @|| 1, gdimz = @|| 1,
+//            nblkx = @|| 1, nblky = @|| 1, nblkz = @|| 1
+//        };
+//        hls(dev, || @body(work_item));
+//    },
+//    sync          = @|| synchronize_hls(dev),
+//    alloc         = @|size| alloc_hls(dev, size),
+//    //alloc_unified = @|size| alloc_hls_unified(dev, size),
+//    barrier       = @|| ()
+//};
+//
+//fn @cgra_accelerator(dev: i32, runtime_ratio: f32, location: (i32 ,i32), vector_size: i32) = Accelerator {
+//    exec = @|body| |_grid, _block| {
+//        let work_item = WorkItem {
+//            tidx  = @|| 0, tidy  = @|| 0, tidz  = @|| 0,
+//            bidx  = @|| 0, bidy  = @|| 0, bidz  = @|| 0,
+//            gidx  = @|| 0, gidy  = @|| 0, gidz  = @|| 0,
+//            bdimx = @|| 1, bdimy = @|| 1, bdimz = @|| 1,
+//            gdimx = @|| 1, gdimy = @|| 1, gdimz = @|| 1,
+//            nblkx = @|| 1, nblky = @|| 1, nblkz = @|| 1
+//        };
+//        cgra(dev, runtime_ratio, location, vector_size, || @body(work_item));
+//    },
+//    sync          = @|| synchronize_cgra(dev),
+//    alloc         = @|size| alloc_cgra(dev, size),
+//    //alloc_unified = @|size| alloc_cgra_unified(dev, size),
+//    barrier       = @|| ()
+//};
+//
+//
+//fn @unroll_step(body: fn(i32) -> ()) {
+//    fn @(?beg & ?end & ?step) loop(beg: i32, end: i32, step: i32) -> () {
+//        if beg < end {
+//            @body(beg);
+//            loop(beg + step, end, step)
+//        }
+//    }
+//    loop
+//}
+//
+//fn @range(body: fn(i32) -> ()) = @|lower: i32, upper: i32| unroll_step(body)($lower, $upper, 1);
+
+fn @iteration(body: fn(i32, i32) -> ()) = @|acc: Accelerator, width: i32, height: i32| {
+    let grid  = (1, 1, 1);
+    let block = (1, 1, 1);
+    for work_item in acc.exec(grid, block) {
+        for x in range(0, width) {
+            for y in range(0, height) {
+                @body(x, y);
+            }
+        }
+    }
+};
+
+
+static mut ch1 : channel[i32];
+static mut ch2 : channel[i32];
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 1
+}
+
+// using channels for FPGA to CGRA stream
+#[export]
+fn main() -> i32 {
+
+    let width  = 2048;
+    let height = 2048;
+
+    let device = 0;
+    let config_k = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (-1, -1), vector_size = 1};
+
+    let fpga = hls_accelerator(device);
+    let aie = cgra_accelerator(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size);
+
+    let cpu_arr = alloc_cpu((width * height) as i64 * sizeof[i32]());
+    let cpu_res = alloc_cpu((width * height) as i64 * sizeof[i32]());
+
+
+    let fpga_in  = fpga.alloc((width * height) as i64 * sizeof[i32]());
+    let fpga_out = fpga.alloc((width * height) as i64 * sizeof[i32]());
+
+    // initializing the input and output arrays on cpu
+    for i in range(0, width * height) {
+        let cpu_arr_ptr = bitcast[&mut[i32]](cpu_arr.data);
+        let cpu_res_ptr = bitcast[&mut[i32]](cpu_res.data);
+        cpu_arr_ptr(i) = i as i32;
+        cpu_res_ptr(i) = 0:i32;
+    }
+
+    copy(cpu_arr, fpga_in);
+
+    for x, y in iteration(fpga, width, height) {
+        let idx = y * width + x;
+         write_channel[i32](&mut ch1, read[i32](fpga_in, idx));
+    }
+
+   for x, y in iteration(aie, width, height) {
+        let temp =  read_channel[i32](&mut ch1);
+        write_channel(&mut ch2, temp);
+    }
+
+    for x, y in iteration(fpga, width, height) {
+        let idx = y * width + x;
+        write(fpga_out, idx, read_channel[i32](&mut ch2));
+    }
+
+    fpga.sync();
+
+    copy(fpga_out, cpu_res);
+
+    let mut passed = 0;
+    for i in range(0, width * height) {
+        if bitcast[&[i32]](cpu_res.data)(i) != bitcast[&[i32]](cpu_arr.data)(i) { passed++; }
+    }
+
+    if passed == 0 {
+        print_string("Test PASSED!\n");
+    } else {
+        print_string("Test FAILED!\n");
+    }
+
+    release(fpga_out);
+    release(fpga_in);
+    release(cpu_arr);
+    release(cpu_res);
+
+    if passed >= 256 { 255 } else { passed }
+}

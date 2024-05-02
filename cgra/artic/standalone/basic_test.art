@@ -1,0 +1,12 @@
+#[import(cc = "thorin")] fn opencl(_dev: i32, _grid: (i32, i32, i32), _block: (i32, i32, i32), _body: fn() -> ()) -> ();
+//#[import(cc = "device", name = "sin")] fn cuda_sin(f64) -> f64;
+//#[import(cc = "device", name = "sin")] fn opencl_sin(f64) -> f64;
+#[import(cc = "device", name = "aie::sin(aie::inv)")] fn opencl_sin(f64) -> f64;
+#[export]
+fn main() -> i32 {
+    opencl(1,(1,1,1), (1,1,1), || {
+    let b = 5 : f64;
+    let a = opencl_sin(b);
+         });
+    42
+}

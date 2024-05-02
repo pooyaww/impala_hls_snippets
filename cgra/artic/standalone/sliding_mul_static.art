@@ -1,0 +1,35 @@
+
+
+#[import(cc = "thorin")] fn hls(_dev: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "device", name = "aie::broadcast<i32>")] fn cgra_broadcast_i32(i32) -> i32;
+#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(i32, i64) -> i64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> i64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mac")] fn cgra_sliding_mul_xy_ops_mac[T, U](u32, u32, i32, i32, i64, T, u32, U, u32) -> i64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul_common")] fn cgra_sliding_mul_xy_ops_mul_common[T, U](u32, u32, i32, i32,  T, u32, U, u32, i64) -> i64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::negmul")] fn cgra_sliding_mul_xy_ops_negmul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> i64;
+
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 8
+}
+
+#[export]
+fn main() -> i32 {
+    hls(0, || {});
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
+    let coeff = 5:i16;
+    let buff = 42:i16;
+    let res1 = cgra_sliding_mul_xy_ops_mul[i16, i16](2:u32, 2:u32, 2:i32, 2:i32, coeff, 2:u32, buff, 2:u32);
+    let res2 = cgra_sliding_mul_xy_ops_mac[i16, i16](2:u32, 2:u32, 2:i32, 2:i32, 0:i64, coeff, 2:u32, buff, 2:u32);
+    let res3 = cgra_sliding_mul_xy_ops_mul_common[i16, i16](2:u32, 2:u32, 2:i32, 2:i32, coeff, 2:u32, buff, 2:u32, 0:i64);
+    let res4 = cgra_sliding_mul_xy_ops_negmul[i16, i16](2:u32, 2:u32, 2:i32, 2:i32, coeff, 2:u32, buff, 2:u32);
+    //let one = cgra_broadcast_i32(1);
+    let two = cgra_broadcast(4, 2:i64);
+    });
+    42
+}

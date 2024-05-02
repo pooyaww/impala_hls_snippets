@@ -18,7 +18,7 @@ fn main(a: i32) -> &mut i32 {
     let test_ = 5 ;
     let mut out: i32;
 
-    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (0,1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size,|| {
 
         if (a == 1) {

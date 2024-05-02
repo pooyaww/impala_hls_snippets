@@ -33,7 +33,7 @@ fi
 echo "Re-compiling and re-generating..."
 artic --hls-flags ${intfc} ${ANYDSL_INSTALL}/runtime/platforms/artic/*.impala ../${name}.art --emit-llvm -o ${name} > cgra_host_ir_${name}.dump
 if [ $2 == "d" ] && [ -z "$3" ] && [ -z "$4" ]; then
-    mv ${name}.cgra ${name}.cpp
+    mv ${name}_graph.cxx ${name}.cpp
     vim -O cgra_host_ir_${name}.dump ${name}.cpp
 elif [ $2 == "h" ] && [ -z "$3" ] && [ -z "$4" ]; then
     vim -O ${name}.ll cgra_host_ir_${name}.dump

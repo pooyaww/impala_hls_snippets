@@ -13,6 +13,8 @@ else
 fi
 
 fast_emu="fast_emu"
+sim_data="use_sim_data"
+iteration="iteration=15"
 
 if [ -z "$1" ]; then
     echo "No test name supplied"
@@ -28,7 +30,7 @@ if ls ./*${name}*.{dump,cpp} 1> /dev/null 2>&1; then
 fi
 
 echo "Re-compiling and re-generating..."
-artic --log-level warn --hls-flags ${intfc},${fast_emu} ../${name}.art --emit-llvm -o ${name} > hls_host_ir_${name}.dump
+artic --log-level warn --hls-flags ${intfc},${fast_emu},${sim_data},${iteration} ../${name}.art --emit-llvm -o ${name} > hls_host_ir_${name}.dump
 
 if [[ $2 == "cf" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     vim -O ${name}.cfg
