@@ -8,7 +8,7 @@
 #[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
 #[import(cc = "builtin")] fn sizeof[_]() -> i64;
 #[import(cc = "device", name = "aie::add")] fn cgra_add_i32(i32, i32) -> i32;
-#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v(i32, i64) -> i64;
+#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v(u32, i64) -> i64;
 //#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(1) T) -> T;
 #[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(i32, i64) -> i64;
 
@@ -69,10 +69,10 @@ fn main() -> () {
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
         let temp = read_channel_i32(&mut ch1);
         write_channel_i32(&mut ch2, temp);
-        let temp5 = cgra_load_v(2, 5);
+        let temp5 = cgra_load_v(2:u32, 5);
         let temp6 = temp5 + 1;
         let acc = cgra_add_i32(1, 2);
-        cgra_load_v(2, temp6);
+        cgra_load_v(2:u32, temp6);
         cgra_broadcast(5, temp6);
     });
 

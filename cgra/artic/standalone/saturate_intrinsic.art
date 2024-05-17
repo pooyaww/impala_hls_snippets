@@ -67,7 +67,7 @@ fn main() -> () {
 
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
-
+        let var: bool;
          //let test_ = bitcast[&addrspace(4)[u8]](x5)
         let temp = read_channel_i32(&mut ch1);
         cgra_set_saturation();

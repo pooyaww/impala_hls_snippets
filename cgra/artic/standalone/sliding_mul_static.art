@@ -3,7 +3,8 @@
 #[import(cc = "thorin")] fn hls(_dev: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
 #[import(cc = "device", name = "aie::broadcast<i32>")] fn cgra_broadcast_i32(i32) -> i32;
-#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(i32, i64) -> i64;
+//#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(i32, i64) -> i64;
+#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(u32, i64) -> i64;
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> i64;
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mac")] fn cgra_sliding_mul_xy_ops_mac[T, U](u32, u32, i32, i32, i64, T, u32, U, u32) -> i64;
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul_common")] fn cgra_sliding_mul_xy_ops_mul_common[T, U](u32, u32, i32, i32,  T, u32, U, u32, i64) -> i64;
