@@ -1,0 +1,142 @@
+// using channels to switch between FPGA and CGRA
+
+#[import(cc = "thorin", interface = "window", size = 1024)] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn reserve_shared[T](_size: i32) -> &mut addrspace(3)[T];
+#[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
+#[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
+#[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
+#[import(cc = "builtin")] fn sizeof[_]() -> i64;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(3) T) -> T;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut [T * 4]) -> T;
+//#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast(i32, i64) -> i64;
+//#[import(cc = "device", name = "aie::select")] fn cgra_select_i32(i32, i32, bool) -> i32;
+#[import(cc = "device", name = "aie::broadcast")] fn cgra_broadcast[T](i32, T) -> T;
+
+
+
+
+// addrspace on type needs an explicit bitcast on argument
+#[import(cc = "device", name = "aie::vector::insert")] fn cgra_insert[T](T, u32, T) -> ();
+
+static static_mask = [7, 8, 9, 10];
+
+
+struct channel_i32 {
+    data: i32
+}
+
+struct Buffer {
+    data : &mut [i8],
+    size : i64,
+    device : i32
+}
+
+fn @alloc(device: i32, size: i64) = Buffer {
+    data = runtime_alloc(device, size),
+    size = size,
+    device = device
+};
+
+fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
+//fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+fn @read(buf: MEM, i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+static mut ch1 : channel_i32;
+static mut ch2 : channel_i32;
+
+//static mut mmul1 : mmul[i32];
+
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 4
+}
+
+//TODO: on the C-backend we need to look at world().branch and exclude those def from getting a vectorized version
+// also we can use pipeline intrinsic
+fn @unroll_step(body: fn(i32) -> ()) {
+    fn @(?beg & ?end & ?step) loop(beg: i32, end: i32, step: i32) -> () {
+        if beg < end {
+            @body(beg);
+            loop(beg + step, end, step)
+        }
+    }
+    loop
+}
+
+fn @range_(body: fn(i32) -> ()) = @|lower: i32, upper: i32| unroll_step(body)($lower, $upper, 1);
+
+
+fn @range(body: fn (i32) -> ()) {
+    fn loop(a: i32, b: i32) -> () {
+        if a < b {
+            body(a);
+            loop(a + 1, b)
+        }
+    }
+    loop
+}
+
+fn @unroll(body: fn (i32) -> ()) {
+    fn @(?a & ?b) loop(a: i32, b: i32) -> () {
+        if a < b {
+            body(a);
+            loop(a + 1, b)
+        }
+    }
+    loop
+}
+
+
+struct MEM {
+    mem: &mut[i32]
+}
+
+#[export]
+fn main() -> () {
+    let device = 0;
+    let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+    let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+
+    let aa = MEM{mem = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32]};
+
+    hls(device, || {
+        //write_channel_i32(&mut ch1, read(ptr_in, 0));
+        write_channel_i32(&mut ch1, read(aa, 0));
+    });
+
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
+        let shared_mask = reserve_shared[i32](4);
+        //shared_mask(0) = static_mask(3);
+        let var = true;
+
+        let mut z : [i32 * 4] = [0, 0, 0, 0];
+        for i in range_(0, 3) {
+            z(i) = static_mask(i);
+            //shared_mask(i) = static_mask(i);
+            //shared_mask(i) = i;
+            shared_mask(i) = 1:i32;
+            //cgra_broadcast(4, i as i64);
+        }
+        cgra_broadcast(4, true);
+
+        //let loaded = cgra_load_v[i32](2, shared_mask);
+        let temp = read_channel_i32(&mut ch1);
+        cgra_insert(temp, 0, temp);
+
+
+        write_channel_i32(&mut ch2, temp);
+    });
+
+    hls(device,|| {
+        write(ptr_out, 0, read_channel_i32(&mut ch2));
+    });
+
+
+}
