@@ -8,12 +8,14 @@
 #[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
 #[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
 #[import(cc = "builtin")] fn sizeof[_]() -> i64;
-//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(3) T) -> T;
-#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(1) T) -> T;
+#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> u64;
 #[import(cc = "device", name = "window_readincr_v")] fn cgra_window_readincr_v[T](u32, &mut channel[T]) -> T;
 #[import(cc = "device", name = "aie::zeros")] fn cgra_zeros[T](u32) -> T;
-#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u64, u32) -> T;
+//#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u64, u32) -> T;
+#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u32, u64, u32) -> T;
 
 
 // addrspace on type needs an explicit bitcast on argument
@@ -131,38 +133,41 @@ fn main() -> () {
         write_channel[i32](&mut ch1, read[i32](aa, 0));
     });
 
-    //TODO: the way hls channels get vectorized isdifferetn from cgra apis. we need to make them compatible. probably similar to host-hls
+    //TODO: the way hls channels get vectorized is differetn from cgra APIs. We need to make them compatible. probably similar to host-hls
+
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
         let shared_mask = reserve_shared[i32](8);
         let lane_size = config_k1.vector_size as u32;
         let data = cgra_zeros[i32](lane_size);
-        let coeff = cgra_load_v[i32](8, &static_mask);
+        let coeff = cgra_load_v[i32](8, &static_mask(0));
         let mut acc : u64;
+
         // loop_iter = (NUM_SAMPLES/AIE_MUL_LANES)/NUM_MUL_LOOP
         for _i in aie_pipeline(0, 30) {
 
             // Read 8 samples and insert them in the second part of the data vector
             let data_1 = cgra_window_readincr_v(8, &mut ch1);
             cgra_insert(data, 1, data_1);		// 0...0 | d0..d7
+
             ///Run multiply operation
-            //let acc = sliding_mul_i32(8, 8, coeff, data, 1);
             acc = sliding_mul_8x8_i32(coeff, data, 1);
+
             //Output 8 samples
-            let res_vector_1 = cgra_to_vector[i32](acc, 0);
+            let res_vector_1 = cgra_to_vector[i32](8, acc, 0);
             write_channel(&mut ch2, res_vector_1);
 
 
             // Read 8 samples and insert then in the first part of the data vector
             let data_2 = cgra_window_readincr_v(8, &mut ch1);
             cgra_insert(data, 0, data_2);		// d8...d15 | d0..d7
-            ///Run multiply operation
-            //let acc = sliding_mul_i32(8, 8, coeff, data, 9);
-            acc = sliding_mul_8x8_i32(coeff, data, 9);
-            //Output 8 samples
-            let res_vector_2 = cgra_to_vector[i32](acc, 0);
-            write_channel(&mut ch2, res_vector_2);
 
+            ///Run multiply operation
+            acc = sliding_mul_8x8_i32(coeff, data, 9);
+
+            //Output 8 samples
+            let res_vector_2 = cgra_to_vector[i32](8, acc, 0);
+            write_channel(&mut ch2, res_vector_2);
 
 
             //cgra_load_v[i32](0, shared_mask);
@@ -179,7 +184,6 @@ fn main() -> () {
     hls(device,|| {
         write(ptr_out, 0, read_channel(&mut ch2));
     });
-
 
 }
 // also make one with rt support
