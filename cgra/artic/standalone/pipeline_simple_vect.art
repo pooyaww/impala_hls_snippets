@@ -1,0 +1,29 @@
+
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin", name = "pipeline")] fn thorin_pipeline(_initiation_interval: i32, _lower: i32, _upper: i32, _body: fn(i32) -> ())     -> ();
+fn @pipeline(body: fn (i32) -> ()) = @|initiation_interval: i32, lower: i32, upper: i32| thorin_pipeline(initiation_interval, lower, upper    , body);
+#[import(cc = "device", name = "aie::add")] fn cgra_add_i32(i32, i32) -> i32;
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 4
+}
+
+#[export]
+fn main()-> () {
+    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
+        let mut k = 1;
+        let II = 3;
+        for i in pipeline(II,20,30) {
+            //body
+            k += i;
+
+           let added =  cgra_add_i32(i, k);
+        }
+    });
+}
+
+
