@@ -12,7 +12,7 @@
 #[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
 //#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> u64;
-#[import(cc = "device", name = "window_readincr_v")] fn cgra_window_readincr_v[T](u32, &mut channel[T]) -> T;
+#[import(cc = "device", name = "window_readincr_v_channel")] fn cgra_window_readincr_v[T](u32, &mut channel[T]) -> T;
 #[import(cc = "device", name = "aie::zeros")] fn cgra_zeros[T](u32) -> T;
 //#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u64, u32) -> T;
 #[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u32, u64, u32) -> T;
@@ -147,6 +147,7 @@ fn main() -> () {
         for _i in aie_pipeline(0, 30) {
 
             // Read 8 samples and insert them in the second part of the data vector
+            //let data_1 = read_channel( &mut ch1);
             let data_1 = cgra_window_readincr_v(8, &mut ch1);
             cgra_insert(data, 1, data_1);		// 0...0 | d0..d7
 
