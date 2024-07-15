@@ -15,11 +15,10 @@ fn main() -> () {
         write_channel4(&mut ch0, read(ptr,0));
     });
 
-    hls(device, || {
-        // read from ch0 and write to ch1
+    cgra(0, 1, (1, 5) , 4, || {
         write_channel4(&mut ch1, read_channel4(&mut ch0));
-    }
-    );
+
+    });
 
     hls(device, || {
         // read from ch1 and write to global memory
@@ -27,3 +26,6 @@ fn main() -> () {
     }
     );
 }
+// TODO: in the generated kernel code instead of getting that struct we need to get a normal primary type but in the graph code we need to
+// increase the PLIO bitwidth accordingly.
+

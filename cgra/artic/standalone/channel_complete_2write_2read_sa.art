@@ -1,6 +1,7 @@
 // using channels to switch between FPGA and CGRA
 
-#[import(cc = "thorin", interface = "window")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size: i32, _body: fn() -> ()) -> ();
+//#[import(cc = "thorin", interface = "window")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
