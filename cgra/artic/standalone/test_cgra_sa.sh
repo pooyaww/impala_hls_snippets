@@ -40,7 +40,7 @@ elif [[ $2 == "d" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
 elif [[ $2 == "i" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
     vim hls_host_ir_${name}.dump
 elif [[ $2 == "hls" ]] && [[ $3 == "cgra" ]] && [[ -z "$4" ]] ; then
-    mv ${name}.cxx ${name}_cgra.cpp
+    mv ${name}_kernel.cxx ${name}_cgra.cpp
     mv ${name}.hls ${name}_hls.cpp
     vim -O ${name}.ll hls_host_ir_${name}.dump ${name}_hls.cpp ${name}_cgra.cpp
 elif [[ $2 == "h" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
@@ -52,7 +52,7 @@ elif [[ $2 == "d" ]] && [[ $3 == "h" ]] && [[ $4 == "c" ]]; then
     mv ${name}.cxx ${name}.cpp
     vim -O ../${name}.art ${name}.ll hls_host_ir_${name}.dump ${name}.cpp
 elif [[ -z "$2" ]] && [[ -z "$3" ]] && [[ -z "$4" ]]; then
-    mv ${name}.cxx ${name}_cgra.cpp
+    mv ${name}_kernel.cxx ${name}_cgra.cpp
     mv ${name}.hls ${name}_hls.cpp
 
     count=`ls -1 *.cl 2>/dev/null | wc -l`
