@@ -1,0 +1,351 @@
+// Naive version: no mem access optimization, no border handling
+// AIE window interface is 256 bits, so for int32 type we can use maximum 8 lanes. 8x32b = 256b
+static v_size = 8;
+type TYPE = i32;
+static ACC_SHIFT = 0:u32;
+#[import(cc = "thorin", interface = "window", size = 1024)] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn reserve_shared[T](_size: i32) -> &mut addrspace(3)[T];
+#[import(cc = "device", name = "read_channel")] fn read_channel[T](&mut channel[T]) -> T;
+#[import(cc = "device", name = "write_channel")] fn write_channel[T] (&mut channel[T], i32) -> ();
+//fn @cgra_window_write_channel_v8[T](ch: &mut channel8[T], val: T) = cgra_window_writeincr_v8[T](ch, val);
+
+#[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
+#[import(cc = "builtin")] fn sizeof[_]() -> i64;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(1) T) -> T;
+#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
+#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_[T](u32, &mut  T, T) -> ();
+#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local[T](u32, &mut addrspace(3) T, T) -> ();
+//#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local_i32(u32, &mut addrspace(3) [i32], i32) -> ();
+
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> u64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mac")] fn cgra_sliding_mul_xy_ops_mac[T, U](u32, u32, i32, i32, u64, T, u32, U, u32) -> u64;
+
+#[import(cc = "device", name = "aie::shuffle_up_fill")] fn cgra_shuffle_up_fill[T](T, T, u32) -> T;
+
+#[import(cc = "device", name = "window_readincr_v_channel")] fn cgra_window_readincr_v[T](u32, &mut channel[T]) -> T;
+#[import(cc = "device", name = "aie::zeros")] fn cgra_zeros[T](u32) -> T;
+//#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u64, u32) -> T;
+#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u32, u64, u32) -> T;
+#[import(cc = "device", name = "srs")] fn cgra_shift_round_saturate[T](u32, u64, u32) -> T;
+#[import(cc = "device", name = "set_sat")] fn cgra_set_sat() -> ();
+
+// addrspace on type needs an explicit bitcast on argument
+#[import(cc = "device", name = "aie::vector::insert")] fn cgra_insert[T](T, u32, T) -> ();
+#[import(cc = "thorin", name = "pipeline")] fn thorin_pipeline(_initiation_interval: i32, _lower: i32, _upper: i32, _body: fn(i32) -> ()) -> ();
+fn @pipeline(body: fn (i32) -> ()) = @|initiation_interval: i32, lower: i32, upper: i32| thorin_pipeline(initiation_interval, lower, upper, body);
+
+fn @aie_pipeline(body: fn (i32) -> ()) = @|lower: i32, upper: i32| thorin_pipeline(0, lower, upper, body);
+
+fn read_channel_v8[T](ch: &mut channel[T]) -> T {
+    cgra_window_readincr_v[T](8, ch)
+}
+
+//fn @cgra_window_read_channel_v8[T](ch: &mut channel8[T]) = cgra_window_readincr_v8[T](8, ch) ;
+
+
+fn sliding_mul_i32(lane_size: u32, fir_taps: u32, coeff:i32, coeff_start:u32, data:i32) -> u64 {
+
+    // 32b x 32b
+    // max lanes: 8
+    // max points(taps): 8
+    // coeff start < 16
+    // ret acc80 (u64)
+
+    let coeff_step = 1;
+    let data_step_xy = 1;
+    let data_start = 0:u32;
+
+    cgra_sliding_mul_xy_ops_mul[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, coeff, coeff_start, data, data_start)
+}
+
+fn sliding_mul_8x8_i32(coeff:i32, coeff_start:u32, data:i32) = sliding_mul_i32(8, 8, coeff:i32, coeff_start:u32, data:i32);
+
+fn sliding_mac_i32(lane_size: u32, fir_taps: u32, acc: u64, coeff:i32, coeff_start:u32, data:i32) -> u64 {
+
+    // 32b x 32b
+    // max lanes: 8
+    // max points(taps): 8
+    // coeff start < 16
+    // ret acc80 (u64)
+
+    let coeff_step = 1;
+    let data_step_xy = 1;
+    let data_start = 0:u32;
+
+    cgra_sliding_mul_xy_ops_mac[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, acc, coeff, coeff_start, data, data_start)
+}
+
+fn sliding_mac_8x8_i32(acc:u64, coeff:i32, coeff_start:u32, data:i32) = sliding_mac_i32(8, 8, acc:u64, coeff:i32, coeff_start:u32, data:i32);
+
+
+fn @unroll_step(body: fn(i32) -> ()) {
+    fn @(?beg & ?end & ?step) loop(beg: i32, end: i32, step: i32) -> () {
+        if beg < end {
+            @body(beg);
+            loop(beg + step, end, step)
+        }
+    }
+    loop
+}
+
+fn @range_(body: fn(i32) -> ()) = @|lower: i32, upper: i32| unroll_step(body)($lower, $upper, 1);
+
+
+fn @range(body: fn (i32) -> ()) {
+    fn loop(a: i32, b: i32) -> () {
+        if a < b {
+            body(a);
+            loop(a + 1, b)
+        }
+    }
+    loop
+}
+
+type pixel_t = TYPE;
+static laplace_mask3 = [[ 0 as pixel_t, 1 as pixel_t, 0 as pixel_t ],
+                       [  1 as pixel_t, -4 as pixel_t, 1 as pixel_t],
+                       [  0 as pixel_t, 1 as pixel_t, 0 as pixel_t]];
+//static dummy_mask = [ [0],
+//                      [1] ];
+
+struct channel_i32 {
+    data: i32
+}
+
+struct channel[T] {
+    data: T
+}
+
+struct Buffer {
+    data : &mut [i8],
+    size : i64,
+    device : i32
+}
+
+
+struct Mask[T] {
+    data : fn(i32, i32) -> T,
+    sum  : T,
+    size_x : i32,
+    size_y : i32,
+}
+
+struct Img_dim {
+    width : i32,
+    height : i32
+}
+
+fn @make_8multiple(num: u32) -> u32 {
+    if num % 8 == 0 {
+        num
+    } else {
+        make_8multiple(num + 1)
+    }
+}
+
+fn @next_8multiple(num: u32) -> u32 {
+    if num <= 8 {
+        8
+    } else if (num & (num - 1)) == 0 && num % 8 == 0 {
+        num // If num is already a power of 2 and a multiple of 8, return it
+    } else {
+        next_8multiple(num + 1) // Recur with the next number
+    }
+}
+
+fn @sum_mask[T](size: i32, data: fn(i32) -> T) -> T {
+    fn @sum_helper(i: i32, s: pixel_t) -> pixel_t {
+        if i == size { s } else { sum_helper(i + 1, s + bitcast[pixel_t](data(i))) }
+    }
+    let sum = sum_helper(0, 0 as pixel_t);
+    if sum == 0 as pixel_t {
+        bitcast[T](1)
+    } else {
+        bitcast[T](sum)
+    }
+}
+
+fn @get_mask3[T](data: [[T * 3] * 3]) -> Mask[T] {
+    let data_sum = @|x:i32| -> T { data(x % 3)(x / 3) };
+    Mask[T] {
+        data = @|x, y| -> T { data(y)(x) },
+        sum  = sum_mask(9, data_sum),
+        size_x = 3, size_y = 3
+    }
+}
+
+fn @alloc(device: i32, size: i64) = Buffer {
+    data = runtime_alloc(device, size),
+    size = size,
+    device = device
+};
+
+fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
+fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
+
+static mut ch1 : channel[i32];
+static mut ch2 : channel[i32];
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = v_size
+}
+
+struct Linebuffer_t[T] {
+    line0: T,
+    line1: T,
+    line2: T
+}
+
+fn filter_2d[T](linebuffer: Linebuffer_t[T] ,out_buff: T, mask: T) -> () {
+
+}
+
+static mut lbuf_cnt = 0;
+
+#[export]
+fn main() -> () {
+    let device = 0;
+    let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+    let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+
+    let img_dim = Img_dim { width = 1024, height = 1024 };
+    let mask = get_mask3(laplace_mask3);
+    let kernel_width = mask.size_x;
+    let kernel_height = mask.size_y;
+
+    hls(device, || {
+        write_channel[i32](&mut ch1, read(ptr_in, 0));
+    });
+
+
+    fn prepare_lbuff[T](input: &mut channel[T], lbuff: &mut addrspace(3)[T], kernel_width: i32, image_width: i32) -> Linebuffer_t[fn(i32) -> &mut addrspace(3) T] {
+        let lbuf_seg = lbuf_cnt % kernel_width;
+
+        for x in range(0, img_dim.width / v_size) {
+            let data_slice = read_channel_v8[T](input);
+            let lbuff_idx = (lbuf_seg * img_dim.width) + (x * v_size);
+            cgra_store_v_local[T](v_size as u32, lbuff(lbuff_idx), data_slice);
+        }
+
+        let cur_lbuf_cnt = lbuf_cnt;
+        lbuf_cnt++;
+
+        if cur_lbuf_cnt == 0 {
+
+            Linebuffer_t[fn(i32) -> &mut addrspace(3) T] {
+                line0 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(i) },
+                line1 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(i) },
+                line2 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(i) },
+            }
+
+        } else if cur_lbuf_cnt == 1 {
+
+            Linebuffer_t[fn(i32) -> &mut addrspace(3) T] {
+                line0 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(img_dim.width + i) },
+                line1 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(i) },
+                line2 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(img_dim.width + i) },
+            }
+
+        } else {
+
+            Linebuffer_t[fn(i32) -> &mut addrspace(3) T] {
+                line0 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(((cur_lbuf_cnt + 1) % 3) * img_dim.width + i) },
+                line1 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(((cur_lbuf_cnt + 2) % 3) * img_dim.width + i) },
+                line2 = @|i: i32| -> &mut addrspace(3) T { &mut lbuff(((cur_lbuf_cnt + 0) % 3) * img_dim.width + i) },
+            }
+        }
+    }
+
+    fn process[T](
+        img_dim: Img_dim, linebuffer: Linebuffer_t[fn(i32) -> &mut addrspace(3) T], mask: Mask[TYPE], out: &mut channel[TYPE]) -> () {
+
+        let kernel_width = mask.size_x;
+        let kernel_side = (kernel_width / 2) as u32;
+
+        let mut line0_idx = 0;
+        let mut line1_idx = 0;
+        let mut line2_idx = 0;
+
+        let mut acc: u64;
+
+        let mut data_slice0 = cgra_zeros[TYPE](v_size as u32);
+        let mut data_slice1 = cgra_zeros[TYPE](v_size as u32);
+        let mut data_slice2 = cgra_zeros[TYPE](v_size as u32);
+
+        let mut prev_slice0 = cgra_zeros[TYPE](v_size as u32);
+        let mut prev_slice1 = cgra_zeros[TYPE](v_size as u32);
+        let mut prev_slice2 = cgra_zeros[TYPE](v_size as u32);
+
+        let points = next_8multiple(kernel_width as u32);
+        let mut value = bitcast[[TYPE * 32]]([0; 32]);
+
+        for j in range(0, mask.size_y) {
+            for i in range(0, mask.size_x) {
+                let idx = j * (points as i32) + i;
+                value(idx) = mask.data(j, i);
+            }
+        }
+
+        let coeff_padded_size = next_8multiple(points * (kernel_width as u32));
+        let mut coeffs_padded = cgra_zeros[TYPE](coeff_padded_size);
+
+        for x in range(0, (img_dim.width - (kernel_width - 1) + v_size - 1) / v_size) {
+            coeffs_padded = cgra_load_v[TYPE](coeff_padded_size, &value(0));
+
+            data_slice0 = cgra_load_v[TYPE](v_size as u32, bitcast[&TYPE](linebuffer.line0(line0_idx)));
+            line0_idx += v_size;
+            data_slice0 = cgra_shuffle_up_fill(data_slice0, prev_slice0, kernel_side);
+            prev_slice0 = data_slice0;
+            acc = sliding_mul_8x8_i32(coeffs_padded, 0, data_slice0);
+
+            data_slice1 = cgra_load_v[TYPE](v_size as u32, bitcast[&TYPE](linebuffer.line1(line1_idx)));
+            line1_idx += v_size;
+            data_slice1 = cgra_shuffle_up_fill(data_slice1, prev_slice1, kernel_side);
+            prev_slice1 = data_slice1;
+            acc = sliding_mac_8x8_i32(acc, coeffs_padded, points, data_slice1);
+
+            data_slice2 = cgra_load_v[TYPE](v_size as u32, bitcast[&TYPE](linebuffer.line2(line2_idx)));
+            line2_idx += v_size;
+            data_slice2 = cgra_shuffle_up_fill(data_slice2, prev_slice2, kernel_side);
+            prev_slice2 = data_slice2;
+            acc = sliding_mac_8x8_i32(acc, coeffs_padded, (2 * points), data_slice2);
+
+            let res_vector = cgra_shift_round_saturate[TYPE](v_size as u32, acc, ACC_SHIFT);
+            write_channel[i32](out, res_vector);
+        }
+    }
+
+    let config_k1 = CGRA_CONFIG {
+        device= 0,
+        runtime_ratio= 1,
+        location= (-1, -1),
+        vector_size= v_size,
+    };
+
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
+
+            cgra_set_sat();
+
+            let lane_size = config_k1.vector_size as u32;
+            let lbuff = reserve_shared[TYPE](kernel_width * img_dim.width);
+
+            for y in range(0, img_dim.height - (kernel_height - 1)) {
+
+                let lbuff_addrs = prepare_lbuff[TYPE](ch1, lbuff, kernel_height, img_dim.width);
+                process[TYPE](img_dim, lbuff_addrs, mask, &mut ch2);
+
+            }
+        },
+    );
+
+    hls(device, || {
+        write(ptr_out, 0, read_channel(&mut ch2));
+    });
+}
