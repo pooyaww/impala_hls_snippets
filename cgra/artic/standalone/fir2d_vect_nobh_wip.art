@@ -338,7 +338,7 @@ fn main() -> () {
 
             for y in range(0, img_dim.height - (kernel_height - 1)) {
 
-                let lbuff_addrs = prepare_lbuff[TYPE](ch1, lbuff, kernel_height, img_dim.width);
+                let lbuff_addrs = prepare_lbuff[TYPE](ch1, lbuff, kernel_width, img_dim.width);
                 process[TYPE](img_dim, lbuff_addrs, mask, &mut ch2);
 
             }
