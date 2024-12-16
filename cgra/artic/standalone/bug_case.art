@@ -1,5 +1,4 @@
-// using channels to switch between FPGA and CGRA
-
+static v_size = 16;
 #[import(cc = "thorin", interface = "window", size = 1024)] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn reserve_shared[T](_size: i32) -> &mut addrspace(3)[T];
@@ -92,26 +91,20 @@ fn @alloc(device: i32, size: i64) = Buffer {
 };
 
 fn @runtime_device(platform: i32, device: i32) -> i32 { platform | (device << 4) }
-//fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
-//fn @read(buf: MEM, i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
-fn @read[T](buf: MEM, i: i32) -> T { bitcast[&addrspace(1)[T]](buf)(i)}
+fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
 
-//static mut ch1 : channel_i32;
-//static mut ch2 : channel_i32;
 
 
 static mut ch1 : channel[i32];
 static mut ch2 : channel[i32];
-
-//static mut mmul1 : mmul[i32];
 
 
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
     location: (i32, i32) = (-10, -10),
-    vector_size: i32 = 16
+    vector_size: i32 = v_size
 }
 
 
@@ -120,29 +113,46 @@ struct MEM {
     mem: &mut[i32]
 }
 
+//T = u8
+struct Linebuffer_t[T] {
+    line0: T,
+    line1: T,
+    line2: T
+}
+
+
+static mut lbuf_cnt = 0;
+
 #[export]
 fn main() -> () {
     let device = 0;
     let ptr_in = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
     let ptr_out = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
 
-    let aa = MEM{mem = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32]};
+    let aa = alloc(runtime_device(2, device), sizeof[i32]() * 4:i64).data as &mut [i32];
+
+    let kernel_width = 3;
+    let image_width = 1024;
+    let image_height = 1024;
 
     hls(device, || {
-        //write_channel(&mut ch1, read(ptr_in, 0));
-        write_channel[i32](&mut ch1, read[i32](aa, 0));
+        write_channel[i32](&mut ch1, read(aa, 0));
     });
 
-    //TODO: the way hls channels get vectorized is differetn from cgra APIs. We need to make them compatible. probably similar to host-hls
-
-    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
-    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
-        let shared_mask = reserve_shared[i32](8);
-        let lane_size = config_k1.vector_size as u32;
-        let data = cgra_zeros[i32](lane_size);
+    cgra(0, 1, (1,1), 16, || {
+        let ddddd = cgra_zeros[i32](16);
         let coeff = cgra_load_v[i32](8, &static_mask(0));
-        let mut acc : u64;
 
+        let lbuff = reserve_shared[i32](kernel_width * image_width);
+        for y in range(0, image_height) { // apply lines-wise processing but 3 lines must be ready to be processed
+
+            lbuf_cnt = lbuf_cnt % kernel_width;
+
+            for x in range(0, image_width / v_size) {
+                let data = read_channel_v8(&mut ch1);
+                lbuff(lbuf_cnt * image_width + x);
+            }
+        }
     });
 
     hls(device,|| {

@@ -1,0 +1,12 @@
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn    () -> ()) -> ();
+#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
+
+#[export]
+fn foo() -> () {
+
+    cgra(0, 1, (-1, -1), 4, || {
+        let mut array = [0; 32];
+        cgra_load_v[i32](32, &array(0));
+    });
+
+}
