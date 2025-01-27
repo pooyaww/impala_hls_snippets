@@ -1,0 +1,137 @@
+// Naive version: no mem access optimization, no border handling
+// AIE window interface is 256 bits, so for int32 type we can use maximum 8 lanes. 8x32b = 256b
+static v_size = 8;
+type TYPE = i32;
+static ACC_SHIFT = 0:u32;
+#[import(cc = "thorin", interface = "window", size = 1024)] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
+#[import(cc = "thorin")] fn reserve_shared[T](_size: i32) -> &mut addrspace(3)[T];
+
+#[import(cc = "C", name = "anydsl_alloc")] fn runtime_alloc(_device: i32, _size: i64) -> &mut [i8];
+#[import(cc = "builtin")] fn bitcast[T, U](_src: U) -> T;
+#[import(cc = "builtin")] fn sizeof[_]() -> i64;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](i32, &mut addrspace(1) T) -> T;
+#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
+//#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
+#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_[T](u32, &mut  T, T) -> ();
+#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local[T](u32, &mut addrspace(3) T, T) -> ();
+//#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local_i32(u32, &mut addrspace(3) [i32], i32) -> ();
+#[import(cc = "device", name = " ")] fn copy_v[T](T) -> T;
+
+
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> u64;
+#[import(cc = "device", name = "aie::sliding_mul_xy_ops::mac")] fn cgra_sliding_mul_xy_ops_mac[T, U](u32, u32, i32, i32, u64, T, u32, U, u32) -> u64;
+
+#[import(cc = "device", name = "aie::shuffle_up_fill")] fn cgra_shuffle_up_fill[T](T, T, u32) -> T;
+
+#[import(cc = "device", name = "aie::zeros")] fn cgra_zeros[T](u32) -> T;
+//#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u64, u32) -> T;
+#[import(cc = "device", name = "srs")] fn cgra_to_vector[T](u32, u64, u32) -> T;
+#[import(cc = "device", name = "srs")] fn cgra_shift_round_saturate[T](u32, u64, u32) -> T;
+#[import(cc = "device", name = "set_sat")] fn cgra_set_sat() -> ();
+
+// addrspace on type needs an explicit bitcast on argument
+#[import(cc = "device", name = "aie::vector::insert")] fn cgra_insert[T](T, u32, T) -> ();
+#[import(cc = "thorin", name = "pipeline")] fn thorin_pipeline(_initiation_interval: i32, _lower: i32, _upper: i32, _body: fn(i32) -> ()) -> ();
+fn @pipeline(body: fn (i32) -> ()) = @|initiation_interval: i32, lower: i32, upper: i32| thorin_pipeline(initiation_interval, lower, upper, body);
+
+fn @aie_pipeline(body: fn (i32) -> ()) = @|lower: i32, upper: i32| thorin_pipeline(0, lower, upper, body);
+
+
+
+
+fn sliding_mul_i32(lane_size: u32, fir_taps: u32, coeff:i32, coeff_start:u32, data:i32) -> u64 {
+
+    // 32b x 32b
+    // max lanes: 8
+    // max points(taps): 8
+    // coeff start < 16
+    // ret acc80 (u64)
+
+    let coeff_step = 1;
+    let data_step_xy = 1;
+    let data_start = 0:u32;
+
+    cgra_sliding_mul_xy_ops_mul[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, coeff, coeff_start, data, data_start)
+}
+
+fn sliding_mul_8x8_i32(coeff:i32, coeff_start:u32, data:i32) = sliding_mul_i32(8, 8, coeff:i32, coeff_start:u32, data:i32);
+
+fn sliding_mac_i32(lane_size: u32, fir_taps: u32, acc: u64, coeff:i32, coeff_start:u32, data:i32) -> u64 {
+
+    // 32b x 32b
+    // max lanes: 8
+    // max points(taps): 8
+    // coeff start < 16
+    // ret acc80 (u64)
+
+    let coeff_step = 1;
+    let data_step_xy = 1;
+    let data_start = 0:u32;
+
+    cgra_sliding_mul_xy_ops_mac[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, acc, coeff, coeff_start, data, data_start)
+}
+
+fn sliding_mac_8x8_i32(acc:u64, coeff:i32, coeff_start:u32, data:i32) = sliding_mac_i32(8, 8, acc:u64, coeff:i32, coeff_start:u32, data:i32);
+
+
+fn @unroll_step(body: fn(i32) -> ()) {
+    fn @(?beg & ?end & ?step) loop(beg: i32, end: i32, step: i32) -> () {
+        if beg < end {
+            @body(beg);
+            loop(beg + step, end, step)
+        }
+    }
+    loop
+}
+
+fn @range_(body: fn(i32) -> ()) = @|lower: i32, upper: i32| unroll_step(body)($lower, $upper, 1);
+
+
+fn @range(body: fn (i32) -> ()) {
+    fn loop(a: i32, b: i32) -> () {
+        if a < b {
+            body(a);
+            loop(a + 1, b)
+        }
+    }
+    loop
+}
+
+type pixel_t = TYPE;
+
+
+struct CGRA_CONFIG {
+    device: i32 = 0,
+    runtime_ratio: f32 = 1,
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = v_size
+}
+
+
+
+#[export]
+fn main() -> () {
+    let device = 0;
+
+
+    let config_k1 = CGRA_CONFIG {
+        device= 0,
+        runtime_ratio= 1,
+        location= (-1, -1),
+        vector_size= v_size,
+    };
+
+    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
+
+        let data_slice0 = cgra_zeros[TYPE](v_size as u32);
+
+            cgra_insert(0,0, data_slice0);
+            cgra_insert(0,0, data_slice0);
+            cgra_insert(0,0, data_slice0);
+            cgra_insert(0,0, data_slice0);
+
+        },
+    );
+
+}

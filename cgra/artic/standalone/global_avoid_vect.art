@@ -1,0 +1,14 @@
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+static mut scalar: i32 = 0;
+
+#[export]
+fn main() -> i32 {
+    cgra(0, 1, (1, 1), 4, || {
+         let mut local = 5;
+         scalar = 42;
+         let mut copy_scalar = scalar % local;
+         copy_scalar = copy_scalar + 1;
+
+         });
+    42
+}
