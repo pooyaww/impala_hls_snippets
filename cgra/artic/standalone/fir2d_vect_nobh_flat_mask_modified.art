@@ -241,7 +241,7 @@ fn main() -> () {
         let lbuf_seg = lbuf_cnt % kernel_width;
 
         for x in aie_pipeline(0, img_dim.width / v_size) {
-            let data_slice = read_channel_v8[T](input);
+            let data_slice = read_channel_v8[T](input); // should be replaced with cgra_window_readincr_v8 in final version
             //let lbuff_idx = (lbuf_seg * img_dim.width) + (x * v_size);
             let lbuff_idx = (lbuf_seg * img_dim.width) + (x * 22);
             cgra_store_v_local[T](v_size as u32, lbuff(lbuff_idx), data_slice);
