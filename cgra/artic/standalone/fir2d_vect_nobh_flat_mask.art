@@ -17,7 +17,7 @@ static ACC_SHIFT = 0:u32;
 #[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &T) -> T;
 //#[import(cc = "device", name = "aie::load_v")] fn cgra_load_v[T](u32, &[T * 8]) -> T;
 #[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_[T](u32, &mut  T, T) -> ();
-#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local[T](u32, &mut addrspace(3) T, T) -> ();
+#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local[T](&mut addrspace(3) T, T) -> ();
 //#[import(cc = "device", name = "aie::store_v")] fn cgra_store_v_local_i32(u32, &mut addrspace(3) [i32], i32) -> ();
 
 #[import(cc = "device", name = "aie::sliding_mul_xy_ops::mul")] fn cgra_sliding_mul_xy_ops_mul[T, U](u32, u32, i32, i32,  T, u32, U, u32) -> u64;
@@ -242,7 +242,7 @@ fn main() -> () {
             let data_slice = read_channel_v8[T](input);
             //let lbuff_idx = (lbuf_seg * img_dim.width) + (x * v_size);
             let lbuff_idx = (lbuf_seg * img_dim.width) + (x * 22);
-            cgra_store_v_local[T](v_size as u32, lbuff(lbuff_idx), data_slice);
+            cgra_store_v_local[T](lbuff(lbuff_idx), data_slice);
         }
 
         let cur_lbuf_cnt = lbuf_cnt;
