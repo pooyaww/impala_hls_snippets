@@ -65,7 +65,7 @@ fn sliding_mul_i32(lane_size: u32, fir_taps: u32, coeff:i32, coeff_start:u32, da
     cgra_sliding_mul_xy_ops_mul[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, coeff, coeff_start, data, data_start)
 }
 
-fn sliding_mul_8x8_i32(coeff:i32, coeff_start:u32, data:i32) = sliding_mul_i32(8, 8, coeff:i32, coeff_start:u32, data:i32);
+fn sliding_mul_8x8_i32(coeff:i32, data:i32) = sliding_mul_i32(8, 8, coeff:i32, 0, data:i32);
 
 fn sliding_mac_i32(lane_size: u32, fir_taps: u32, acc: u64, coeff:i32, coeff_start:u32, data:i32) -> u64 {
 
@@ -82,7 +82,7 @@ fn sliding_mac_i32(lane_size: u32, fir_taps: u32, acc: u64, coeff:i32, coeff_sta
     cgra_sliding_mul_xy_ops_mac[i32, i32](lane_size, fir_taps, coeff_step, data_step_xy, acc, coeff, coeff_start, data, data_start)
 }
 
-fn sliding_mac_8x8_i32(acc:u64, coeff:i32, coeff_start:u32, data:i32) = sliding_mac_i32(8, 8, acc:u64, coeff:i32, coeff_start:u32, data:i32);
+fn sliding_mac_8x8_i32(acc:u64, coeff:i32, data:i32) = sliding_mac_i32(8, 8, acc:u64, coeff:i32, 0, data:i32);
 
 
 fn @unroll_step(body: fn(i32) -> ()) {
@@ -302,6 +302,8 @@ fn main() -> () {
         }
 
         let coeff_padded_size = next_8multiple(points * (kernel_width as u32)); // usable only for uint8_t MUL/MAC
+
+        let mut coeffs_padded = cgra_zeros[TYPE](coeff_padded_size);
         let mut coeffs_padded_row0 = cgra_zeros[TYPE](points);
         let mut coeffs_padded_row1 = cgra_zeros[TYPE](points);
         let mut coeffs_padded_row2 = cgra_zeros[TYPE](points);
@@ -320,21 +322,21 @@ fn main() -> () {
             //prev_slice0 = data_slice0;
             //prev_slice0 = copy_v(data_slice0);
             cgra_insert(prev_slice0, 0, data_slice0); //added
-            acc = sliding_mul_8x8_i32(coeffs_padded_row0, 0, data_slice0);
+            acc = sliding_mul_8x8_i32(coeffs_padded_row0, data_slice0);
 
             data_slice1 = cgra_load_v[TYPE](v_size as u32, bitcast[&TYPE](linebuffer.line1(line1_idx)));
             line1_idx += v_size;
             data_slice1 = cgra_shuffle_up_fill(data_slice1, copy_v(prev_slice1), kernel_side);
             //prev_slice1 = data_slice1;
             cgra_insert(prev_slice1, 0, data_slice1); //added
-            acc = sliding_mac_8x8_i32(acc, coeffs_padded_row1, 0, data_slice1);
+            acc = sliding_mac_8x8_i32(acc, coeffs_padded_row1, data_slice1);
 
             data_slice2 = cgra_load_v[TYPE](v_size as u32, bitcast[&TYPE](linebuffer.line2(line2_idx)));
             line2_idx += v_size;
             data_slice2 = cgra_shuffle_up_fill(data_slice2, copy_v(prev_slice2), kernel_side);
             //prev_slice2 = data_slice2;
             cgra_insert(prev_slice2, 0, data_slice2); //added
-            acc = sliding_mac_8x8_i32(acc, coeffs_padded_row2, 0, data_slice2);
+            acc = sliding_mac_8x8_i32(acc, coeffs_padded_row2, data_slice2);
 
             let res_vector = cgra_shift_round_saturate[TYPE](v_size as u32, acc, ACC_SHIFT);
             write_channel[i32](out, res_vector);
