@@ -1,10 +1,7 @@
-// Multicasting is forking the data to multiple kernels
-// In this example, we have 4 kernels, and we want to multicast the data from the first kernel to the second and third kernel
-// At the moment the problem with CGRA Graph code is that the indices of the broadcasting kernels are not correct and it fallsback to -1
-// until the issue is fixed, we can use a new kernel for forking (broadcasting), this kernel can either be mapped to a new tile or to the same tile but with correct runtime ratio
-// Dirty HACK: we can also manually correct -1s to zeros in the generated code, and it should work for our set of applications
+// using channels to switch between FPGA and CGRA
 
-#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+//#[import(cc = "thorin", interface = "window")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size: i32, _body: fn() -> ()) -> ();
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
 #[import(cc = "device", name = "read_channel")] fn read_channel_i32(&mut channel_i32) -> i32;
 #[import(cc = "device", name = "write_channel")] fn write_channel_i32 (&mut channel_i32, i32) -> ();
@@ -34,14 +31,14 @@ fn @read(buf: &mut [i32], i: i32) -> i32 { bitcast[&addrspace(1)[i32]](buf)(i)}
 fn @write(buf: &mut [i32], i: i32, v: i32) -> () { bitcast[&mut addrspace(1)[i32]](buf)(i) = v }
 
 static mut ch1 : channel_i32;
+static mut ch1_copy : channel_i32;
 static mut ch2 : channel_i32;
-//static mut ch3 : channel_i32;
-//static mut ch4 : channel_i32;
 
 struct CGRA_CONFIG {
     device: i32 = 0,
     runtime_ratio: f32 = 1,
-    location: (i32, i32) = (-10, -10)
+    location: (i32, i32) = (-10, -10),
+    vector_size: i32 = 4
 }
 
 #[export]
@@ -52,24 +49,21 @@ fn main() -> () {
 
     hls(device, || {
         write_channel_i32(&mut ch1, read(ptr_in, 0));
+        //write_channel_i32(&mut ch1_copy, read(ptr_in, 0));
     });
 
-//    let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
-//    cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, 4, || {
-//        let temp = read_channel_i32(&mut ch1);
-//        write_channel_i32(&mut ch2, temp);
-//    });
-
-
-    hls(device,|| {
+    let config_k = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (1,1)};
+    cgra(config_k.device, config_k.runtime_ratio, config_k.location, config_k.vector_size, || {
         let temp = read_channel_i32(&mut ch1);
-        write_channel_i32(&mut ch2, temp);
+        //let temp_copy = read_channel_i32(&mut ch1_copy);
+        let temp_copy = read_channel_i32(&mut ch1);
+        let temp_doubled = temp + temp_copy;
+        write_channel_i32(&mut ch2, temp_doubled);
     });
 
     hls(device,|| {
-        let temp1 = read_channel_i32(&mut ch1);
-        let temp2 = read_channel_i32(&mut ch2);
-        write(ptr_out, 0, temp1 + temp2);
+        write(ptr_out, 0, read_channel_i32(&mut ch2));
     });
+
 
 }
