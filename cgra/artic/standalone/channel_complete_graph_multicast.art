@@ -1,4 +1,5 @@
 // using channels to switch between FPGA and CGRA
+// multicasting is reading from the same channel multiple times
 
 #[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
 #[import(cc = "thorin")] fn hls(dev: i32, body: fn() -> ()) -> ();
@@ -53,20 +54,20 @@ fn main() -> () {
 
     let config_k1 = CGRA_CONFIG{device = 0, runtime_ratio = 0.5, location = (-1, -1)};
     cgra(config_k1.device, config_k1.runtime_ratio, config_k1.location, config_k1.vector_size, || {
-        let temp = read_channel_i32(&mut ch1);
-        write_channel_i32(&mut ch2, temp + temp_);
+        let temp = read_channel_i32(&mut ch1); // first read from ch1
+        write_channel_i32(&mut ch2, temp);
     });
 
     let config_k2 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (-1, -1)};
     cgra(config_k1.device, config_k2.runtime_ratio, config_k2.location, config_k2.vector_size, || {
-        let temp_ = read_channel_i32(&mut ch1);
-        let temp2 = read_channel_i32(&mut ch2);
+        // let temp_ = read_channel_i32(&mut ch1); // second read from ch1 (we don't fully support this yet, as it is multicasting a PLIO)
+        let temp2 = read_channel_i32(&mut ch2); // first read from ch2
         write_channel_i32(&mut ch3, temp2);
     });
 
     let config_k3 = CGRA_CONFIG{device = 0, runtime_ratio = 1, location = (-1, -1)};
     cgra(config_k3.device, config_k3.runtime_ratio, config_k3.location, config_k3.vector_size, || {
-        let temp1 = read_channel_i32(&mut ch2);
+        let temp1 = read_channel_i32(&mut ch2); // second read from ch2
         let temp2 = read_channel_i32(&mut ch3);
         write_channel_i32(&mut ch4, temp1 + temp2);
     });
