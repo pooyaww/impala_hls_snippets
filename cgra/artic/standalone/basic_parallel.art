@@ -1,0 +1,25 @@
+#[import(cc = "thorin", interface = "stream")] fn cgra(_dev: i32, _runtime_ratio: f32, _location: (i32,i32), _vector_size_: i32, _body: fn() -> ()) -> ();
+#[import(cc = "C", name = "anydsl_print_i32")]    fn print_i32(_: i32) -> ();
+
+
+fn @unroll(body: fn (i32) -> ()) {
+    fn @(?a & ?b) loop(a: i32, b: i32) -> () {
+        if a < b {
+            body(a);
+            loop(a + 1, b)
+        }
+    }
+    loop
+}
+
+
+#[export]
+fn main() -> i32 {
+    for i in unroll(0, 3) {
+        cgra(0, 1, (1, i), 4, || {
+             print_i32(i);
+        });
+    }
+    42
+}
+
